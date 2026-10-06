@@ -32,10 +32,26 @@
      <section class="card"><div class="card-heading"><span class="step">01</span><div><h2>訂單資料</h2><p>這一筆，要做多少件？</p></div></div><div id="order-meta" class="fields two"></div></section>
      <section class="card"><div class="card-heading"><span class="step">02</span><div><h2>加工與人工時間</h2><p>機台占用與人工投入，分開計算。</p></div></div><div class="section-caption">單件投入</div><div id="order-times" class="fields two"></div><div class="section-caption separated">整批架機 · 依訂單數量分攤</div><div id="order-setup" class="fields two"></div><p class="helper-note">多工序請加總時間；兩人各投入 3 分鐘，填 6 人分鐘。上下料占用機台時，也需計入機台時間。</p></section>
      <section class="card"><div class="card-heading"><span class="step">03</span><div><h2>材料與外部費用</h2><p>按交付良品所需費用估算。</p></div></div><div id="order-costs" class="fields two"></div><div id="order-notes"></div><p class="helper-note">專用刀具勿重複列入共用耗材；損耗與重工請反映在輸入的費用或時間中。</p></section>
+     <section class="card" id="dev-card">
+      <div class="card-heading"><span class="step">04</span><div><h2>打樣與開發費用</h2><p>程式撰寫、夾治具開發、測試與委外驗證等開發投入，獨立列示或分攤至本次訂單。</p></div></div>
+      <div id="dev-items"></div>
+      <button type="button" id="dev-add" class="button outline">＋ 新增開發費項目</button>
+      <div class="section-caption separated">開發費收費方式</div>
+      <div class="fields two">
+       <label class="field"><span class="field-label"><span>開發費目標毛利率</span><span class="field-unit">%</span></span><input id="dev-marginPercent" type="text" inputmode="decimal" maxlength="30" placeholder="0"><div class="field-error" id="dev-marginPercent-error"></div></label>
+       <div class="dev-chargemode"><span class="field-label"><span>收費方式</span></span>
+        <label class="dev-radio"><input type="radio" name="dev-chargeMode" value="separate"> 獨立收取（另外列示）</label>
+        <label class="dev-radio"><input type="radio" name="dev-chargeMode" value="amortized"> 分攤至本次訂單（併入單價）</label>
+       </div>
+      </div>
+      <p class="helper-note">已計入原有材料、架機、加工人工、刀具或委外欄位的費用，請勿再次填入開發費，避免重複計價。同一筆開發費不可同時另收又分攤。</p>
+      <div id="dev-errors" class="form-errors" role="alert" hidden></div>
+     </section>
     </form>
     <aside class="result-column">
      <section class="result-card"><div class="result-top"><span class="eyebrow">QUOTE ESTIMATE</span><span class="pill light">依已輸入成本估算</span></div><h2>建議售價</h2><div id="result-empty"><div class="empty-number">—</div><p>填寫成本設定與訂單資料，<br>即可查看完整試算。</p><button class="button pale" data-view="settings">前往成本設定 →</button></div><div id="result-content" hidden><div class="price"><small>NT$</small><span id="unit-price">—</span></div><div class="price-caption">每件 · 未稅 · 向上取至 0.01 元</div><div class="total-row"><span>整批建議金額</span><strong id="batch-price">—</strong></div></div><div id="margin-field"></div><div class="formula">建議單價 = 單件成本 ÷（1 − 毛利率）</div></section>
      <section class="card breakdown-card"><div class="card-title-row"><h2>成本拆解</h2><span>每件 / NT$</span></div><div id="breakdown" class="breakdown"><p class="muted">完成輸入後顯示明細。</p></div><div class="cost-total"><span>單件估算成本</span><strong id="unit-cost">—</strong></div><div class="cost-total smaller"><span>整批估算成本</span><strong id="batch-cost">—</strong></div><details><summary>查看費率與分攤依據</summary><div id="rate-details" class="rate-details">尚未設定</div></details></section>
+     <section class="card breakdown-card" id="dev-result-card"><div class="card-title-row"><h2>開發費與整筆報價</h2><span>NT$</span></div><div id="dev-breakdown" class="breakdown"><p class="muted">尚未新增開發費項目，視為未使用此功能。</p></div><div class="cost-total"><span>開發總成本</span><strong id="dev-cost">—</strong></div><div class="cost-total smaller"><span>建議開發收費</span><strong id="dev-price">—</strong></div><div class="cost-total smaller" id="dev-perunit-row" hidden><span>每件分攤開發費</span><strong id="dev-perunit">—</strong></div><div class="total-row"><span>整筆報價總額（含開發費）</span><strong id="dev-grand-total">—</strong></div><p class="save-note" id="dev-rounding-note" hidden></p></section>
      <div id="form-errors" class="form-errors" role="alert" hidden></div>
      <button id="save-new" class="button dark full">儲存為新報價</button><button id="save-update" class="button outline full" disabled>更新這筆報價</button><p class="save-note">保存當下的成本快照，保留歷史報價依據。</p>
     </aside>

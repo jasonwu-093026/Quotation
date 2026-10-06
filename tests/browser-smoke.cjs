@@ -8,7 +8,41 @@ const {chromium}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES?process.
  const url=process.env.QUOTATION_TEST_URL||'http://127.0.0.1:8080';
  await page.goto(url);await page.locator('#demo').click({timeout:3000});
  assert.equal(await page.locator('#unit-price').textContent(),'86.75');
+ // issue #3｜打樣與開發費用：新增一筆工時計價、一筆固定金額，確認即時試算、毛利率、
+ // 獨立收取的整筆總額，以及輸入過程中不會因重繪而打斷游標（焦點安全）。
+ await page.locator('#dev-add').click();
+ const dev1=page.locator('.dev-item').first();
+ await dev1.locator('select[aria-label="計算方式"]').selectOption('hours');
+ await dev1.locator('[data-dev-field="name"]').fill('加工程式撰寫');
+ const devHours=dev1.locator('[data-dev-field="hours"]');
+ await devHours.pressSequentially('4',{delay:20});assert.equal(await devHours.inputValue(),'4');
+ await dev1.locator('[data-dev-field="rate"]').fill('800');
+ assert.equal(await page.locator('#dev-cost').textContent(),'3,200.00');
+ await page.locator('#dev-add').click();
+ const dev2=page.locator('.dev-item').nth(1);
+ await dev2.locator('select[aria-label="計算方式"]').selectOption('fixed');
+ await dev2.locator('[data-dev-field="name"]').fill('委外驗證');
+ await dev2.locator('[data-dev-field="amount"]').fill('4000');
+ assert.equal(await page.locator('#dev-cost').textContent(),'7,200.00');
+ await page.locator('#dev-marginPercent').fill('20');
+ assert.equal(await page.locator('#dev-price').textContent(),'9,000.00');
+ assert.equal(await page.locator('#unit-price').textContent(),'86.75');
+ assert.equal(await page.locator('#dev-grand-total').textContent(),'NT$ 17,675.00');
+ await page.locator('input[name="dev-chargeMode"][value="amortized"]').check();
+ assert.equal(await page.locator('#dev-perunit-row').isVisible(),true);
+ await dev2.locator('button.danger-button').click();
+ assert.equal(await page.locator('.dev-item').count(),1);
+ assert.equal(await page.locator('#dev-cost').textContent(),'3,200.00');
+ await page.locator('input[name="dev-chargeMode"][value="separate"]').check();
  await page.locator('#save-new').click();assert.match(await page.locator('#notice').textContent(),/已保存/);
+ // 持久化檢查沿用既有做法（讀本機儲存原始 JSON），不重新整理頁面，避免打斷後續情境共用的表單狀態。
+ const devRaw=await page.evaluate(()=>JSON.parse(localStorage.getItem('quotation.v1')).quotes[0].dev);
+ assert.equal(devRaw.items.length,1);
+ assert.equal(devRaw.items[0].name,'加工程式撰寫');
+ assert.equal(devRaw.items[0].hours,'4');
+ assert.equal(devRaw.items[0].rate,'800');
+ assert.equal(devRaw.marginPercent,'20');
+ assert.equal(devRaw.chargeMode,'separate');
  await page.locator('#o-quantity').fill('200');assert.equal(await page.locator('#unit-price').textContent(),'80.25');
  page.once('dialog',d=>d.dismiss());await page.locator('#save-update').click();
  const raw=await page.evaluate(()=>JSON.parse(localStorage.getItem('quotation.v1')));assert.equal(raw.quotes[0].order.quantity,'100');
