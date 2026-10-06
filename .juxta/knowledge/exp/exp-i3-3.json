@@ -1,0 +1,15 @@
+{
+ "id": "exp-i3-3",
+ "domain": "generic",
+ "situation": "A Juxta gate tool (e.g. ab_verify.py --mutation) rejects a JSON fixture with a terse error like 'expected requires unique regression node IDs and assertion messages', and there is no docs/MUTATION_CONTROL.md or example fixture anywhere on the machine to confirm the schema; the .py source is not shipped, only a compiled .pyc",
+ "right_direction": "Disassemble the specific .pyc with Python's own marshal+dis modules (open the file, skip the 16-byte pyc header, marshal.load the code object, then dis.dis the function whose name matches the error — found via grep over co_consts for the exact error string). This gives the EXACT dict keys, control flow, and validation order, e.g. that 'expected' must be a list[{nodeid,message}] not a bare string, and that a repair's file-level changes are keyed 'changes': [{path, repaired, removed}], not 'targets': [{path, replace}]. Before trusting a fix, simulate the transform by hand on a throwaway copy of the real file and run the actual test suite against it to confirm it produces exactly the intended failure with the exact declared message substring, THEN push once.",
+ "anti_pattern": "Treating 2-3 failed guesses at an undocumented binary's JSON schema as proof the feature is 'fundamentally incompatible with this runner type' and documenting it as a permanent environment limitation in the PR/issue report. The tool's own disassembly showed full, deliberate support for a non-pytest 'command' runner (a whole _command_mutation_observe code path); the repeated error was a wrong field NAME and a wrong field TYPE, not a missing capability. This wasted a full pre-handoff bounce round (#3 R1->R2) that direct disassembly would have avoided entirely.",
+ "anti_signals": [],
+ "strength": 1,
+ "sources": [
+  "#3"
+ ],
+ "teacher": "agent",
+ "lock": "tests/fixtures/mutations/i3.json",
+ "tool": ""
+}
