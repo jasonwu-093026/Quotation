@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createQuote,updateQuote,saveQuote,deleteQuote,applyCurrentSettings} from '../src/quotes.js';
+import {calculateQuote} from '../src/calculator.js';
+import {settings100 as s,order100 as o} from './fixtures.js';
+const now='2026-10-07T00:00:00.000Z',later='2026-10-07T01:00:00.000Z';
+const make=()=>createQuote(s,o,{id:'q1',now});
+test('新增報價深複製設定與訂單',()=>{const input=structuredClone(s),order=structuredClone(o);const q=createQuote(input,order,{id:'q1',now});input.laborMonthly='0';order.quantity='1';assert.equal(q.settingsSnapshot.laborMonthly,'57600');assert.equal(q.order.quantity,'100');});
+test('更新保留建立時間與id',()=>{const q=make(),next=updateQuote(q,s,{...o,quantity:'200'},later);assert.equal(next.id,'q1');assert.equal(next.createdAt,now);assert.equal(next.updatedAt,later);assert.equal(q.order.quantity,'100');});
+test('存入取代不重複，刪除只影響指定項目',()=>{const original={schemaVersion:1,settings:s,quotes:[]};const first=saveQuote(original,make());const changed=saveQuote(first,updateQuote(make(),s,{...o,quantity:'200'},later));assert.equal(changed.quotes.length,1);assert.equal(changed.quotes[0].order.quantity,'200');assert.equal(first.quotes[0].order.quantity,'100');const two=saveQuote(changed,createQuote(s,o,{id:'q2',now}));assert.deepEqual(deleteQuote(two,'q1').quotes.map(q=>q.id),['q2']);assert.equal(two.quotes.length,2);assert.equal(original.quotes.length,0);});
+test('全域成本變動不改舊單，明確套用才重算',()=>{const q=make(),newSettings={...s,laborMonthly:'115200'};assert.equal(calculateQuote(q.settingsSnapshot,q.order).unitPrice,'86.75');const draft=applyCurrentSettings(q,newSettings);assert.equal(calculateQuote(draft.settingsSnapshot,draft.order).unitPrice,'94.75');assert.equal(calculateQuote(q.settingsSnapshot,q.order).unitPrice,'86.75');});
+test('無效報價不能存入',()=>assert.throws(()=>saveQuote({schemaVersion:1,settings:s,quotes:[]},{...make(),order:{...o,quantity:'0'}})));

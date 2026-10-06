@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {calculateQuote} from '../src/calculator.js';
+import {settings100 as s, order100 as o} from './fixtures.js';
+test('100 件成本與毛利報價符合手算',()=>{const r=calculateQuote(s,o);assert.equal(r.rates.machinePerMinute,'5.000000');assert.equal(r.rates.laborPerMinute,'4.000000');assert.equal(r.rates.machineMinutes,'14400.000000');assert.equal(r.unitCost,'69.40');assert.equal(r.batchCost,'6940.00');assert.equal(r.unitPrice,'86.75');assert.equal(r.batchPrice,'8675.00');assert.deepEqual(r.unitBreakdown,{machine:'25.00',labor:'4.00',setupMachine:'3.00',setupLabor:'2.40',material:'20.00',outsource:'10.00',tooling:'5.00'});});
+test('200 件只攤薄批次費用',()=>{const r=calculateQuote(s,{...o,quantity:'200'});assert.equal(r.unitCost,'64.20');assert.equal(r.batchCost,'12840.00');assert.equal(r.unitPrice,'80.25');assert.equal(r.batchPrice,'16050.00');});
+for(const [materialUnit,expected] of [['0.10','0.10'],['0.100001','0.11'],['1.005','1.01']])test('精確向上取分 '+materialUnit,()=>{const r=calculateQuote(s,{...o,machineMinutes:'0',laborMinutes:'0',setupMachineMinutes:'0',setupLaborMinutes:'0',outsourceUnit:'0',toolingBatch:'0',marginPercent:'0',materialUnit});assert.equal(r.unitPrice,expected);});
+test('人工和機台有效率分開計算',()=>{const r=calculateQuote({...s,workerUtilization:'50'},o);assert.equal(r.rates.machinePerMinute,'5.000000');assert.equal(r.rates.laborPerMinute,'6.000000');const m=calculateQuote({...s,machineUtilization:'50'},o);assert.equal(m.rates.machinePerMinute,'7.500000');assert.equal(m.rates.laborPerMinute,'4.000000');});
+for(const value of ['', 'NaN','Infinity','-1','1e3','1.0000001','1'.repeat(31)])test('拒絕無效金額 '+JSON.stringify(value),()=>assert.throws(()=>calculateQuote(s,{...o,materialUnit:value})));
+for(const [field,value] of [['quantity','0'],['quantity','1.5'],['marginPercent','100'],['marginPercent','-1'],['date','2026-02-30'],['name','']])test('訂單欄位驗證 '+field+value,()=>assert.throws(()=>calculateQuote(s,{...o,[field]:value})));
+for(const [field,value] of [['machineUtilization','0'],['workerUtilization','101'],['machineHours','25'],['workerCount','0'],['machineCount','9007199254740992']])test('設定欄位驗證 '+field+value,()=>assert.throws(()=>calculateQuote({...s,[field]:value},o)));
+test('極端結果拒絕而非失真',()=>assert.throws(()=>calculateQuote({...s,depreciation:'9007199254740991',machineUtilization:'0.000001'},o)));
+test('大整數附近的小數件數仍應拒絕',()=>assert.throws(()=>calculateQuote(s,{...o,quantity:'9007199254740990.1',machineMinutes:'0',laborMinutes:'0',setupMachineMinutes:'0',setupLaborMinutes:'0',materialUnit:'0',outsourceUnit:'0',toolingBatch:'0'})));

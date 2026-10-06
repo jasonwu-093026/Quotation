@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createStorage,parseBackup,serializeBackup} from '../src/storage.js';
+import {settings100,order100} from './fixtures.js';
+const quote={id:'q1',createdAt:'2026-10-07T00:00:00.000Z',updatedAt:'2026-10-07T00:00:00.000Z',calculationVersion:1,settingsSnapshot:settings100,order:order100};
+const data={schemaVersion:1,settings:settings100,quotes:[quote]};
+const adapter=()=>{let value=null;return {getItem:()=>value,setItem:(k,v)=>{value=v;}};};
+test('保存與載入以及備份還原完全一致',()=>{const db=createStorage(adapter());assert.deepEqual(db.load(),{schemaVersion:1,settings:null,quotes:[]});db.save(data);assert.deepEqual(db.load(),data);assert.deepEqual(parseBackup(serializeBackup(data)),data);});
+for(const [name,broken] of [['未知版本',{...data,schemaVersion:2}],['重複id',{...data,quotes:[quote,quote]}],['壞快照',{...data,quotes:[{...quote,settingsSnapshot:{}}]}],['未知計算版本',{...data,quotes:[{...quote,calculationVersion:2}]}],['未知欄位',{...data,extra:true}],['無效日期',{...data,quotes:[{...quote,createdAt:'bad'}]}]])test('拒絕'+name+'且不修改原資料',()=>{const a=adapter(),db=createStorage(a);db.save(data);const before=a.getItem();assert.throws(()=>parseBackup(JSON.stringify(broken)));assert.throws(()=>db.save(broken));assert.equal(a.getItem(),before);});
+test('損壞JSON拒絕且不靜默重設',()=>{const a=adapter();a.setItem('', 'broken');assert.throws(()=>createStorage(a).load());assert.equal(a.getItem(),'broken');assert.throws(()=>parseBackup('broken'));});
+test('讀取與寫入被禁止時錯誤傳遞',()=>{assert.throws(()=>createStorage({getItem(){throw Error('blocked');}}).load(),/blocked/);assert.throws(()=>createStorage({setItem(){throw Error('quota');}}).save(data),/quota/);});
+test('備份所有報價必須可安全計算',()=>assert.throws(()=>parseBackup(JSON.stringify({...data,quotes:[{...quote,order:{...order100,quantity:'9007199254740991'}}]}))));
