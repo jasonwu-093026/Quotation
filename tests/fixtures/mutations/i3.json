@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "repairs": [
+    {
+      "regression": "tests/devcost.test.js",
+      "targets": [
+        {
+          "path": "src/devcost.js",
+          "replace": "}else if(!isBlank(v)){\n      errors.push({field:key,message:'此計算方式不使用此欄位，請清空避免重複加總'});\n    }"
+        }
+      ]
+    }
+  ]
+}
