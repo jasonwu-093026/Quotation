@@ -1,5 +1,55 @@
 {
   "schema": 1,
   "repo": "jasonwu-093026/Quotation",
-  "issues": {}
+  "issues": {
+    "3": {
+      "done": [
+        "2026-10-07 implemented \u6253\u6a23\u8207\u958b\u767c\u8cbb\u7528 (dev cost) feature per issue #3's 6 acceptance scenarios: src/devcost.js + validation/quotes/storage/app.js/index.html/styles.css wiring; 27-case tests/devcost.test.js; fixed pre-existing mobile CSS grid overflow bug found during browser verification; opened PR #4"
+      ],
+      "en_index": {
+        "title": "Add sample-making and development costs",
+        "summary": "Add a \"sample-making and development costs\" section to the existing machining quotation tool, so the owner can itemize costs for new products. Items include machining program writing, jig/fixture design and fabrication, materials and consumables, trial cutting and testing, internal inspection, and outsourced testing or third-party certification. Each item is priced by hours \u00d7 rate, quantity \u00d7 unit"
+      },
+      "first_triaged": "2026-10-06",
+      "last_updated": "2026-10-07",
+      "category": "script",
+      "runtime": {
+        "last": "claude",
+        "source": "drawn at first spawn 2026-10-06T17:54:14Z (claude 50 / codex 50; roll 0.4202)",
+        "fallback": "",
+        "rounds": {
+          "claude": 1
+        },
+        "date": "2026-10-06"
+      },
+      "items": [
+        {
+          "id": 1,
+          "item": "\u65b0\u589e\u6253\u6a23\u8207\u958b\u767c\u8cbb\u7528\u8a08\u7b97\u529f\u80fd\uff1a\u660e\u7d30\u3001\u4e09\u7a2e\u8a08\u50f9\u65b9\u5f0f\u3001\u6bdb\u5229\u7387\u3001\u7368\u7acb\u6536\u53d6\uff0f\u5206\u6524\u81f3\u672c\u6b21\u8a02\u55ae",
+          "author": "jasonwu-093026",
+          "resolved": true,
+          "verified": false,
+          "added": "2026-10-07",
+          "regression": "tests/devcost.test.js",
+          "resolve_note": "\u65b0\u589e src/devcost.js\uff08\u9a57\u8b49\uff0b\u8a08\u7b97\uff09\u3001\u4e32\u63a5 validation/quotes/storage \u7684 dev \u6b04\u4f4d\u3001app.js UI\uff1b27 \u9805 node --test \u6848\u4f8b\u9396\u4f4f\u516d\u9805\u9a57\u6536\u60c5\u5883\uff0b\u908a\u754ccase\uff1b\u53e6\u4fee\u6b63\u65e2\u6709\u884c\u52d5\u7248 .quote-layout \u5728 max-width:960px \u7684 grid auto-min-sizing \u9020\u6210\u6c34\u5e73\u6ea2\u51fa\u7684\u6f5b\u4f0fbug\u3002"
+        }
+      ],
+      "status": "verification-required",
+      "handoff": {
+        "state": "pending",
+        "since": "2026-10-07",
+        "fails": 0
+      },
+      "replies": [
+        {
+          "date": "2026-10-07",
+          "kind": "commented",
+          "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6022829447",
+          "note": "full implementation report + verification evidence posted; PR #4 open",
+          "by": "juxta-triage-bot"
+        }
+      ],
+      "posted": "verification-required@8d4b887"
+    }
+  }
 }
