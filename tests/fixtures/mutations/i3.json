@@ -9,7 +9,12 @@
           "replace": "}else if(!isBlank(v)){\n      errors.push({field:key,message:'此計算方式不使用此欄位，請清空避免重複加總'});\n    }"
         }
       ],
-      "expected": "邊界：選用工時計價時仍填入固定金額欄位，視為重複加總風險並拒絕"
+      "expected": [
+        {
+          "nodeid": "tests/devcost.test.js",
+          "message": "邊界：選用工時計價時仍填入固定金額欄位，視為重複加總風險並拒絕"
+        }
+      ]
     }
   ]
 }
