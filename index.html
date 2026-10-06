@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173f3b"><meta name="description" content="加工成本與報價試算工具。成本透明，報價有據。">
+<title>Quotation｜加工成本與報價</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23173f3b'/%3E%3Ctext x='9' y='29' font-size='28' fill='white'%3EQ%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="./styles.css"><script type="module" src="./src/app.js"></script>
+</head>
+<body>
+<aside class="sidebar">
+ <a class="brand" href="./"><span class="brand-mark">Q<span>·</span></span><span>Quotation<small>加工成本與報價</small></span></a>
+ <div class="workspace-label">工作空間 <span>個人版</span></div>
+ <nav aria-label="主要功能">
+  <button data-view="quote" class="nav-item active" aria-current="page"><span class="nav-icon">▤</span>訂單試算<span class="nav-num">01</span></button>
+  <button data-view="settings" class="nav-item"><span class="nav-icon">⚙</span>成本設定<span class="nav-num">02</span></button>
+  <button data-view="records" class="nav-item"><span class="nav-icon">▣</span>報價紀錄<span id="record-count" class="nav-num">0</span></button>
+ </nav>
+ <div class="sidebar-note"><span class="local-dot"></span>本機資料模式<p>資料只存於此瀏覽器。<br>定期匯出備份，換機時可還原。</p><button id="export" class="sidebar-button">匯出完整備份 <span>↗</span></button></div>
+ <div class="sidebar-footer">QUOTATION <span>v1.0</span></div>
+</aside>
+<main>
+ <header class="topbar"><div><span class="eyebrow">MANUFACTURING WORKSPACE</span><span class="top-divider">／</span><span id="breadcrumb">訂單試算</span></div><span class="currency-tag">TWD · 未稅</span></header>
+ <div class="page">
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <div id="storage-alert" class="notice error" role="alert" hidden></div>
+  <section id="view-quote" class="view">
+   <div class="page-heading"><div><div class="eyebrow">COST → QUOTATION</div><h1>每一筆報價，都有依據。</h1><p>拆解加工成本，讓價格回到清楚的數字。</p></div><div class="heading-actions"><button id="demo" class="button subtle">載入示範</button><button id="new-quote" class="button dark">＋ 新報價</button></div></div>
+   <div class="snapshot-strip"><div><span class="dot"></span><strong id="snapshot-label">尚未設定成本</strong><span id="draft-status" class="pill">新報價</span></div><button id="apply-settings" class="text-button">套用最新成本 ↗</button></div>
+   <div class="quote-layout">
+    <form id="order-form" novalidate>
+     <section class="card"><div class="card-heading"><span class="step">01</span><div><h2>訂單資料</h2><p>這一筆，要做多少件？</p></div></div><div id="order-meta" class="fields two"></div></section>
+     <section class="card"><div class="card-heading"><span class="step">02</span><div><h2>加工與人工時間</h2><p>機台占用與人工投入，分開計算。</p></div></div><div class="section-caption">單件投入</div><div id="order-times" class="fields two"></div><div class="section-caption separated">整批架機 · 依訂單數量分攤</div><div id="order-setup" class="fields two"></div><p class="helper-note">多工序請加總時間；兩人各投入 3 分鐘，填 6 人分鐘。上下料占用機台時，也需計入機台時間。</p></section>
+     <section class="card"><div class="card-heading"><span class="step">03</span><div><h2>材料與外部費用</h2><p>按交付良品所需費用估算。</p></div></div><div id="order-costs" class="fields two"></div><div id="order-notes"></div><p class="helper-note">專用刀具勿重複列入共用耗材；損耗與重工請反映在輸入的費用或時間中。</p></section>
+    </form>
+    <aside class="result-column">
+     <section class="result-card"><div class="result-top"><span class="eyebrow">QUOTE ESTIMATE</span><span class="pill light">依已輸入成本估算</span></div><h2>建議售價</h2><div id="result-empty"><div class="empty-number">—</div><p>填寫成本設定與訂單資料，<br>即可查看完整試算。</p><button class="button pale" data-view="settings">前往成本設定 →</button></div><div id="result-content" hidden><div class="price"><small>NT$</small><span id="unit-price">—</span></div><div class="price-caption">每件 · 未稅 · 向上取至 0.01 元</div><div class="total-row"><span>整批建議金額</span><strong id="batch-price">—</strong></div></div><div id="margin-field"></div><div class="formula">建議單價 = 單件成本 ÷（1 − 毛利率）</div></section>
+     <section class="card breakdown-card"><div class="card-title-row"><h2>成本拆解</h2><span>每件 / NT$</span></div><div id="breakdown" class="breakdown"><p class="muted">完成輸入後顯示明細。</p></div><div class="cost-total"><span>單件估算成本</span><strong id="unit-cost">—</strong></div><div class="cost-total smaller"><span>整批估算成本</span><strong id="batch-cost">—</strong></div><details><summary>查看費率與分攤依據</summary><div id="rate-details" class="rate-details">尚未設定</div></details></section>
+     <div id="form-errors" class="form-errors" role="alert" hidden></div>
+     <button id="save-new" class="button dark full">儲存為新報價</button><button id="save-update" class="button outline full" disabled>更新這筆報價</button><p class="save-note">保存當下的成本快照，保留歷史報價依據。</p>
+    </aside>
+   </div>
+   <p class="scope-note">此工具為成本試算。未輸入的管理、運費、稅與其他費用不會自動計入；估算毛利不等同公司淨利。各分項四捨五入可能有尾差，合計依未取整數值計算。</p>
+  </section>
+  <section id="view-settings" class="view" hidden>
+   <div class="page-heading"><div><div class="eyebrow">COST FOUNDATION</div><h1>先把成本，算清楚。</h1><p>全廠平均費率；直接人工獨立計算。</p></div><button id="save-settings" class="button dark">儲存基本成本</button></div>
+   <div class="notice info">修改這裡不會自動變更舊報價。回到訂單試算，點「套用最新成本」才會更新本筆計算依據。</div>
+   <form id="settings-form" class="settings-grid" novalidate>
+    <section class="card"><div class="card-heading"><span class="step">01</span><div><h2>機台有效工時</h2><p>用可分攤的工時回收機台與共用費用。</p></div></div><div id="machine-fields" class="fields two"></div><p class="helper-note">機台數 × 工作天數 × 每日工時 × 60 × 有效率。有效分鐘包含生產與架機，排除待料等無法分攤的時間。</p></section>
+    <section class="card"><div class="card-heading"><span class="step">02</span><div><h2>每月機台與共用支出</h2><p>僅填分配至本加工範圍的月費用。</p></div></div><div id="expense-fields" class="fields two"></div><p class="helper-note">人工另計。已在電費列入的空壓電費，不再加入耗材。</p></section>
+    <section class="card"><div class="card-heading"><span class="step">03</span><div><h2>直接人工</h2><p>月總成本與有效人分鐘，需使用相同範圍。</p></div></div><div id="worker-fields" class="fields two"></div><p class="helper-note">人工成本請包含你要分攤的薪資、加班、雇主負擔及獎金攤提；有效投入率與機台有效率分開設定。</p></section>
+    <section class="card setting-summary"><span class="eyebrow">透明的計算方式</span><h2>把每月支出，<br>換算成每分鐘。</h2><p>機台費率 = 機台與共用月費 ÷ 全廠有效機台分鐘</p><p>人工費率 = 直接人工月總成本 ÷ 有效人工人分鐘</p><p class="helper-note">訂單時間不需再除以有效率。一人看多機時，填入實際人工投入即可，不再把人工費率除以機台數。</p></section>
+   </form>
+   <div id="settings-errors" class="form-errors" role="alert" hidden></div>
+  </section>
+  <section id="view-records" class="view" hidden>
+   <div class="page-heading"><div><div class="eyebrow">QUOTE HISTORY</div><h1>每次判斷，都留下來。</h1><p>每筆報價都保留獨立的成本設定快照。</p></div><div class="heading-actions"><button id="export-records" class="button dark">匯出完整備份</button><label class="button outline" for="import-file">匯入備份<input id="import-file" type="file" accept=".json,application/json" class="file-input"></label></div></div>
+   <div class="notice info">備份檔包含成本與全部報價，為明文資料，請妥善保管。匯入會在確認後整批取代目前紀錄。</div>
+   <div id="records-list"></div>
+  </section>
+  <footer class="page-footer"><span>成本透明，報價有據。</span><span>Quotation / 個人試算版</span></footer>
+ </div>
+</main>
+<noscript>請啟用 JavaScript 才能使用報價工具。</noscript>
+</body></html>

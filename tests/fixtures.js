@@ -1,0 +1,2 @@
+export const settings100 = {machineCount:'2',machineDays:'20',machineHours:'8',machineUtilization:'75',depreciation:'40000',maintenance:'2000',rent:'10000',electricity:'15000',consumables:'5000',workerCount:'2',workerDays:'20',workerHours:'8',workerUtilization:'75',laborMonthly:'57600'};
+export const order100 = {name:'示範報價',partNumber:'DEMO-001',date:'2026-10-07',quantity:'100',machineMinutes:'5',laborMinutes:'1',setupMachineMinutes:'60',setupLaborMinutes:'60',materialUnit:'20',outsourceUnit:'10',toolingBatch:'500',marginPercent:'20',notes:'假資料，請勿直接用於實際報價。'};
