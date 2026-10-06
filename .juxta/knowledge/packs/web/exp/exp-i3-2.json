@@ -1,0 +1,15 @@
+{
+ "id": "exp-i3-2",
+ "domain": "style",
+ "situation": "A CSS Grid column is sized with a bare fr track (e.g. grid-template-columns:1fr) at a responsive breakpoint, and new content with an unshrinkable flex row (fixed-shrink buttons/controls alongside flex:1 items) is later added somewhere inside that column",
+ "right_direction": "Always wrap fr tracks in minmax(0,1fr) (or set an explicit min-width:0 on the track/item), matching the pattern the rest of the stylesheet already used at its OTHER breakpoints. A bare fr track's automatic minimum is 'auto' (= the largest min-content of its contents), so CSS Grid lets the track — and everything in it — overflow the grid container once any descendant's min-content is nontrivial, even many levels of plain block divs below the grid item.",
+ "anti_pattern": "Assuming overflow at a narrow viewport must be caused by the new element's own CSS (padding/width) and debugging only that element — the actual box only needed min-width:0, which wasn't missing on the new content but on an ancestor grid track several levels up and present before this change.",
+ "anti_signals": [],
+ "strength": 1,
+ "sources": [
+  "#3"
+ ],
+ "teacher": "agent",
+ "lock": "tests/browser-smoke.cjs",
+ "tool": ""
+}

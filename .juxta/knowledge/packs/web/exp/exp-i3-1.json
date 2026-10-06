@@ -1,0 +1,15 @@
+{
+ "id": "exp-i3-1",
+ "domain": "script",
+ "situation": "Rendering a repeatable/dynamic list of form rows (add/remove items) where each row also has free-text inputs the user types into",
+ "right_direction": "Split rendering into two paths: a full DOM rebuild ONLY on structural changes (add/remove item, a change that alters which fields are visible), and a lightweight pass that only updates error text/aria-invalid on EXISTING nodes (via data-* attributes to re-find them) for every keystroke. Calling the full rebuild on every 'input' event recreates the <input> elements and silently resets cursor position / drops the keystroke the user is mid-typing.",
+ "anti_pattern": "Calling the same render function that rebuilds the whole list (replaceChildren + recreate rows) from both the 'add item' handler AND the per-field 'input' handler — it looks correct in a unit test (the final value lands in state either way) and only shows up as a real bug in an actual browser, typing a multi-character value into a freshly-added row.",
+ "anti_signals": [],
+ "strength": 1,
+ "sources": [
+  "#3"
+ ],
+ "teacher": "agent",
+ "lock": "tests/devcost.test.js",
+ "tool": ""
+}
