@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import {calculateQuote} from '../src/calculator.js';
 import {validateDev,validateDevItem,calculateDevCost,calculateDevelopment,emptyDevItem,defaultDev,devSummaryRows,devSummaryLabels} from '../src/devcost.js';
 import {readFileSync} from 'node:fs';
-import {createQuote,updateQuote,saveQuote} from '../src/quotes.js';
+import {createQuote,updateQuote,saveQuote,applyCurrentSettings,quoteDevDisplay} from '../src/quotes.js';
 import {parseBackup,serializeBackup} from '../src/storage.js';
 import {settings100 as s,order100 as o} from './fixtures.js';
 
@@ -297,4 +297,98 @@ test('畫面串接：結果區由 devSummaryRows 產生，「分攤至本次訂�
   assert.ok(!html.includes('<span>開發總成本</span>'));
   assert.ok(/devSummaryRows\(/.test(app));
   assert.ok(app.includes("unitPriceWithDev:'dev-unit-with-dev'"));
+});
+
+// ---- 負責人回饋（留言 6031222444）：「6. 儲存與備份」保留計算結果 ----
+// issue 內文（負責人留言原文）：「保留開發費明細、工時、費率、毛利率、收費方式**及計算結果**」，
+// 「重新開啟歷史報價時，保留當時資料，不因後續修改成本設定而自動重算」。
+const now='2026-10-07T00:00:00.000Z',later='2026-10-07T01:00:00.000Z';
+const order100Unit={...o,quantity:'100',machineMinutes:'16',laborMinutes:'0',setupMachineMinutes:'0',setupLaborMinutes:'0',materialUnit:'0',outsourceUnit:'0',toolingBatch:'0',marginPercent:'20'};
+const amortizedDev={items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'};
+const savedQuote=()=>createQuote(s,order100Unit,{id:'q-saved',now},amortizedDev);
+const pick=r=>({devCost:r.devCost,devPrice:r.devPrice,perUnitDevCost:r.perUnitDevCost,unitPriceWithDev:r.unitPriceWithDev,grandTotal:r.grandTotal,roundingDiff:r.roundingDiff});
+
+test('儲存：20% 毛利、分攤 100 件，報價一併保存開發總成本、建議開發收費、每件分攤、含開發費單價、報價總額與進位差額',()=>{
+  assert.equal(calculateQuote(s,order100Unit).unitPrice,'100.00');
+  assert.deepEqual(pick(savedQuote().devResult),{devCost:'14600.00',devPrice:'18250.00',perUnitDevCost:'182.50',unitPriceWithDev:'282.50',grandTotal:'28250.00',roundingDiff:'0.00'});
+});
+
+test('匯出：完整備份檔裡有 14,600、18,250、282.50、28,250，匯入後計算結果一致',()=>{
+  const store=saveQuote({schemaVersion:1,settings:s,quotes:[]},savedQuote());
+  const text=serializeBackup(store);
+  for(const value of ['"devCost": "14600.00"','"devPrice": "18250.00"','"unitPriceWithDev": "282.50"','"grandTotal": "28250.00"'])assert.ok(text.includes(value),value);
+  assert.deepEqual(parseBackup(text).quotes[0].devResult,store.quotes[0].devResult);
+});
+
+test('改動成本設定再重新開啟：畫面顯示的仍是存下的 14,600、18,250、282.50、28,250',()=>{
+  const changed={...s,depreciation:'80000'};
+  assert.notEqual(calculateQuote(changed,order100Unit).unitPrice,'100.00');
+  const store=saveQuote({schemaVersion:1,settings:changed,quotes:[]},savedQuote());
+  const reopened=parseBackup(serializeBackup(store)).quotes[0];
+  const shown=quoteDevDisplay(reopened);
+  assert.deepEqual([shown.devCost,shown.devPrice,shown.unitPriceWithDev,shown.grandTotal],['14600.00','18250.00','282.50','28250.00']);
+});
+
+test('重新開啟：顯示存下的結果，不重新計算（即使與現行算式結果不同）',()=>{
+  const q=savedQuote();
+  q.devResult.grandTotal='28888.88';
+  const reopened=parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[q]})).quotes[0];
+  assert.equal(quoteDevDisplay(reopened).grandTotal,'28888.88');
+});
+
+test('舊報價：有開發費明細但沒有計算結果欄位時照現有方式開啟（即時計算）',()=>{
+  const {devResult,...legacy}=savedQuote();
+  const reopened=parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[legacy]})).quotes[0];
+  assert.equal('devResult' in reopened,false);
+  assert.equal(quoteDevDisplay(reopened).unitPriceWithDev,'282.50');
+});
+
+test('舊報價：沒有開發費資料時不產生也不顯示開發費結果',()=>{
+  const q=createQuote(s,o,{id:'q-no-dev',now});
+  assert.equal(q.devResult,null);
+  assert.equal(quoteDevDisplay(q),null);
+  const {dev,devResult,...legacy}=q;
+  assert.equal(quoteDevDisplay(parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[legacy]})).quotes[0]),null);
+});
+
+test('儲存：獨立收取時存下的每件分攤與含開發費單價為空，報價總額 28,250',()=>{
+  const q=createQuote(s,order100Unit,{id:'q-sep',now},{...amortizedDev,chargeMode:'separate'});
+  assert.deepEqual(pick(q.devResult),{devCost:'14600.00',devPrice:'18250.00',perUnitDevCost:null,unitPriceWithDev:null,grandTotal:'28250.00',roundingDiff:'0.00'});
+});
+
+test('儲存：分攤進位差額 0.02 也一併保存',()=>{
+  const q=createQuote(s,{...order100Unit,quantity:'3'},{id:'q-round',now},{items:[item({id:'x',method:'fixed',name:'固定開發費',amount:'100'})],marginPercent:'0',chargeMode:'amortized'});
+  assert.deepEqual(pick(q.devResult),{devCost:'100.00',devPrice:'100.00',perUnitDevCost:'33.34',unitPriceWithDev:'133.34',grandTotal:'400.02',roundingDiff:'0.02'});
+});
+
+test('更新報價：修改輸入後重新儲存，依新輸入重算並保存（數量改 200 件）',()=>{
+  const next=updateQuote(savedQuote(),s,{...order100Unit,quantity:'200'},later);
+  assert.deepEqual(pick(next.devResult),{devCost:'14600.00',devPrice:'18250.00',perUnitDevCost:'91.25',unitPriceWithDev:'191.25',grandTotal:'38250.00',roundingDiff:'0.00'});
+  assert.equal(updateQuote(savedQuote(),s,order100Unit,later,null).devResult,null);
+});
+
+test('明確「套用最新成本」才重算並保存新結果',()=>{
+  const changed={...s,depreciation:'80000'};
+  const applied=applyCurrentSettings(savedQuote(),changed);
+  const unit=calculateQuote(changed,order100Unit).unitPrice;
+  assert.notEqual(applied.devResult.unitPriceWithDev,'282.50');
+  assert.equal(applied.devResult.unitPriceWithDev,(Number(unit)+182.5).toFixed(2));
+});
+
+test('匯入：已存計算結果格式錯誤或與明細不一致時拒絕',()=>{
+  const base=savedQuote();
+  const broken=[
+    ['不支援欄位',{...base,devResult:{...base.devResult,extra:'1'}}],
+    ['金額格式',{...base,devResult:{...base.devResult,grandTotal:'28250'}}],
+    ['收費方式不一致',{...base,devResult:{...base.devResult,chargeMode:'separate',perUnitDevCost:null,unitPriceWithDev:null}}],
+    ['缺少明細',{...base,dev:null}],
+    ['明細不一致',{...base,devResult:{...base.devResult,items:base.devResult.items.slice(1)}}],
+  ];
+  for(const [name,q] of broken)assert.throws(()=>parseBackup(JSON.stringify({schemaVersion:1,settings:s,quotes:[q]})),undefined,name);
+});
+
+test('畫面串接：重新開啟報價時採用存下的結果，修改草稿後才改為即時計算',()=>{
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  assert.ok(app.includes('savedDevResult=quoteDevDisplay(q)'));
+  assert.ok(app.includes('if(dirty)savedDevResult=null'));
 });

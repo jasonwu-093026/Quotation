@@ -1,7 +1,7 @@
 import {settingKeys,orderKeys,labels,validateSettings,validateOrder,assertValid} from './validation.js';
 import {calculateQuote} from './calculator.js';
 import {createStorage,serializeBackup,parseBackup,STORAGE_KEY} from './storage.js';
-import {createQuote,updateQuote,saveQuote,deleteQuote,applyCurrentSettings} from './quotes.js';
+import {createQuote,updateQuote,saveQuote,deleteQuote,applyCurrentSettings,quoteDevDisplay} from './quotes.js';
 import {devCategories,devCategoryLabels,devMethods,devMethodLabels,emptyDevItem,defaultDev,validateDev,calculateDevelopment,devSummaryRows} from './devcost.js';
 const $=selector=>document.querySelector(selector);
 const copy=value=>structuredClone(value);
@@ -10,7 +10,7 @@ const emptySettings=()=>Object.fromEntries(settingKeys.map(k=>[k,'']));
 const emptyOrder=()=>Object.fromEntries(orderKeys.map(k=>[k,k==='date'?today():'']));
 const sampleSettings={machineCount:'2',machineDays:'20',machineHours:'8',machineUtilization:'75',depreciation:'40000',maintenance:'2000',rent:'10000',electricity:'15000',consumables:'5000',workerCount:'2',workerDays:'20',workerHours:'8',workerUtilization:'75',laborMonthly:'57600'};
 const sampleOrder={name:'示範報價',partNumber:'DEMO-001',date:today(),quantity:'100',machineMinutes:'5',laborMinutes:'1',setupMachineMinutes:'60',setupLaborMinutes:'60',materialUnit:'20',outsourceUnit:'10',toolingBatch:'500',marginPercent:'20',notes:'假資料，請勿直接用於實際報價。'};
-let store={schemaVersion:1,settings:null,quotes:[]},activeQuoteId=null,quoteSettings=null,dirty=false,globalDirty=false,readBlocked=false,externalChange=false,rawRecovery=null,devState=defaultDev();
+let store={schemaVersion:1,settings:null,quotes:[]},activeQuoteId=null,quoteSettings=null,dirty=false,globalDirty=false,readBlocked=false,externalChange=false,rawRecovery=null,devState=defaultDev(),savedDevResult=null;
 const adapter={getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)};
 const db=createStorage(adapter);
 function notice(message,error=false){$('#notice').hidden=false;$('#notice').className='notice'+(error?' error':'');$('#notice').textContent=message;}
@@ -136,10 +136,11 @@ function calculate(show=true){
  const s=quoteSettings,r=result.rates;
  $('#rate-details').replaceChildren();for(const text of [`機台有效分鐘：${s.machineCount} 台 × ${s.machineDays} 天 × ${s.machineHours} 小時 × 60 × ${s.machineUtilization}% = ${r.machineMinutes}`,`機台月分攤費：${s.depreciation} + ${s.maintenance} + ${s.rent} + ${s.electricity} + ${s.consumables} 元；除以有效分鐘 → ${r.machinePerMinute} 元／機台分鐘（不含人工）。`,`人工有效分鐘：${s.workerCount} 人 × ${s.workerDays} 天 × ${s.workerHours} 小時 × 60 × ${s.workerUtilization}% = ${r.laborMinutes}`,`人工 ${s.laborMonthly} 元 ÷ 有效人分鐘 → ${r.laborPerMinute} 元／人分鐘。`,`費率顯示至 6 位小數，內部計算保留完整精度。`]){const p=document.createElement('p');p.textContent=text;$('#rate-details').append(p);}
  }
+ if(dirty)savedDevResult=null;
  const devIssues=validateDev(devForCalc());
  applyDevIssues(show?devIssues:[]);
- let devResult=null;
- if(result&&!devIssues.length){try{devResult=calculateDevelopment(order,devForCalc(),result);}catch(e){applyDevIssues(e.issues||[{field:'dev',message:e.message}]);}}
+ let devResult=savedDevResult;
+ if(!devResult&&result&&!devIssues.length){try{devResult=calculateDevelopment(order,devForCalc(),result);}catch(e){applyDevIssues(e.issues||[{field:'dev',message:e.message}]);}}
  renderDevResult(devResult);
  updateStatus();return result;
 }
@@ -157,14 +158,14 @@ function persist(next,{recover=false}={}){
  catch(e){notice('尚未保存：'+e.message+' 可先匯出目前有效草稿備份。',true);updateStatus();return false;}
 }
 function guard(){return !dirty||confirm('本筆有尚未保存的變更，確定放棄並切換嗎？');}
-function loadQuote(q){activeQuoteId=q.id;quoteSettings=copy(q.settingsSnapshot);fillFields(q.order,orderKeys,'o');devState=q.dev!=null?copy(q.dev):defaultDev();rebuildDevItems();dirty=false;calculate(false);changeView('quote');}
+function loadQuote(q){activeQuoteId=q.id;quoteSettings=copy(q.settingsSnapshot);fillFields(q.order,orderKeys,'o');devState=q.dev!=null?copy(q.dev):defaultDev();savedDevResult=quoteDevDisplay(q);rebuildDevItems();dirty=false;calculate(false);changeView('quote');}
 function renderRecords(){const list=$('#records-list');list.replaceChildren();updateStatus();if(!store.quotes.length){const box=document.createElement('div');box.className='records-empty';const h=document.createElement('h2');h.textContent='第一筆報價，從試算開始。';const p=document.createElement('p');p.textContent='完成試算並保存後，紀錄就會出現在這裡。';box.append(h,p);list.append(box);return;}
  for(const q of [...store.quotes].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){const card=document.createElement('article');card.className='card record-card';const info=document.createElement('div');const h=document.createElement('h2');h.textContent=q.order.name;const p=document.createElement('p');p.textContent=`${q.order.partNumber||'未填料號'} · ${q.order.date} · ${q.order.quantity} 件`;const price=document.createElement('p');price.textContent='未稅建議單價 NT$ '+money(calculateQuote(q.settingsSnapshot,q.order).unitPrice);info.append(h,p,price);const actions=document.createElement('div');actions.className='record-actions';const load=document.createElement('button');load.className='button outline';load.textContent='載入報價';load.dataset.load=q.id;load.addEventListener('click',()=>{if(guard())loadQuote(q);});const del=document.createElement('button');del.className='danger-button';del.textContent='刪除';del.dataset.delete=q.id;del.addEventListener('click',()=>{if(!confirm('確定刪除「'+q.order.name+'」？此操作會移除該筆紀錄。'))return;const ok=persist(deleteQuote(store,q.id));if(ok&&activeQuoteId===q.id){activeQuoteId=null;dirty=true;}renderRecords();if(ok)notice('已刪除報價。');});actions.append(load,del);card.append(info,actions);list.append(card);}}
 for(const key of orderKeys)$('#o-'+key).addEventListener('input',()=>{dirty=true;calculate();});
 for(const key of settingKeys)$('#s-'+key).addEventListener('input',()=>{globalDirty=true;showErrors(validateSettings(readSettings()),'s','#settings-errors');});
 $('#order-form').addEventListener('submit',e=>e.preventDefault());$('#settings-form').addEventListener('submit',e=>e.preventDefault());
 $('#demo').addEventListener('click',()=>{if((dirty||globalDirty)&&!confirm('載入示範將取代目前未保存的輸入，確定繼續嗎？'))return;fillFields(sampleSettings,settingKeys,'s');quoteSettings=copy(sampleSettings);fillFields({...sampleOrder,date:today()},orderKeys,'o');activeQuoteId=null;devState=defaultDev();rebuildDevItems();dirty=true;globalDirty=true;calculate();notice('目前為假資料示範。尚未寫入本機紀錄；正式報價前請改成你的成本。');});
-$('#new-quote').addEventListener('click',()=>{if(!guard())return;activeQuoteId=null;quoteSettings=copy(store.settings);fillFields(emptyOrder(),orderKeys,'o');devState=defaultDev();rebuildDevItems();dirty=false;calculate(false);notice('已開啟新報價。');});
+$('#new-quote').addEventListener('click',()=>{if(!guard())return;activeQuoteId=null;quoteSettings=copy(store.settings);fillFields(emptyOrder(),orderKeys,'o');devState=defaultDev();savedDevResult=null;rebuildDevItems();dirty=false;calculate(false);notice('已開啟新報價。');});
 $('#dev-add').addEventListener('click',()=>{devState.items.push(emptyDevItem(newId()));dirty=true;rebuildDevItems();calculate();});
 $('#dev-marginPercent').addEventListener('input',()=>{devState.marginPercent=$('#dev-marginPercent').value;dirty=true;calculate();});
 for(const radio of document.querySelectorAll('input[name="dev-chargeMode"]'))radio.addEventListener('change',()=>{if(radio.checked){devState.chargeMode=radio.value;dirty=true;calculate();}});
@@ -176,7 +177,7 @@ function downloadText(text,name){const url=URL.createObjectURL(new Blob([text],{
 function exportBackup(){try{let next=copy(store);if(globalDirty){const settings=readSettings();assertValid(validateSettings(settings));next.settings=settings;}if(dirty)next=saveQuote(next,makeDraft());downloadText(serializeBackup(next),'quotation-backup-'+today()+'.json');notice('已匯出完整備份'+(dirty||globalDirty?'，包含目前有效草稿及成本設定':'')+'。請妥善保管明文檔案。');}catch(e){notice('無法匯出：'+e.message,true);}}
 $('#export').addEventListener('click',exportBackup);
 $('#export-records').addEventListener('click',exportBackup);
-$('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10*1024*1024)throw new Error('備份檔超過 10 MB，請改用較小檔案。');const next=parseBackup(await file.text());if(!confirm(`備份有 ${next.quotes.length} 筆報價，將取代所有目前紀錄及未保存輸入。確定匯入？`))return;if(!persist(next,{recover:true}))return;fillFields(store.settings||emptySettings(),settingKeys,'s');fillFields(emptyOrder(),orderKeys,'o');quoteSettings=copy(store.settings);activeQuoteId=null;devState=defaultDev();rebuildDevItems();dirty=false;globalDirty=false;calculate(false);renderRecords();notice('備份已匯入並保存。');}catch(err){notice('匯入失敗：'+err.message,true);}finally{e.target.value='';}});
+$('#import-file').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>10*1024*1024)throw new Error('備份檔超過 10 MB，請改用較小檔案。');const next=parseBackup(await file.text());if(!confirm(`備份有 ${next.quotes.length} 筆報價，將取代所有目前紀錄及未保存輸入。確定匯入？`))return;if(!persist(next,{recover:true}))return;fillFields(store.settings||emptySettings(),settingKeys,'s');fillFields(emptyOrder(),orderKeys,'o');quoteSettings=copy(store.settings);activeQuoteId=null;devState=defaultDev();savedDevResult=null;rebuildDevItems();dirty=false;globalDirty=false;calculate(false);renderRecords();notice('備份已匯入並保存。');}catch(err){notice('匯入失敗：'+err.message,true);}finally{e.target.value='';}});
 if(rawRecovery!==null){const b=document.createElement('button');b.className='button outline';b.textContent='下載原始資料以保留';b.addEventListener('click',()=>downloadText(rawRecovery,'quotation-recovery-'+today()+'.json'));$('#storage-alert').append(document.createElement('br'),b);}
 window.addEventListener('beforeunload',e=>{if(dirty||globalDirty){e.preventDefault();e.returnValue='';}});
 window.addEventListener('storage',e=>{if(e.key===STORAGE_KEY||e.key===null){externalChange=true;storageAlert('另一分頁已修改或清除資料。為避免覆蓋，請先匯出目前草稿，再重新整理。');}});

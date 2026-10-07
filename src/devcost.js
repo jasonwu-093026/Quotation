@@ -119,6 +119,28 @@ export function calculateDevelopment(order,dev,machiningResult){
   return result;
 }
 
+export const devResultKeys=['items','chargeMode','marginPercent','devCost','devPrice','perUnitDevCost','unitPriceWithDev','grandTotal','roundingDiff','quantity','machiningUnitPrice'];
+const moneyPattern=/^\d+\.\d{2}$/;
+const isMoney=v=>typeof v==='string'&&v.length<=40&&moneyPattern.test(v);
+
+// 已存的計算結果只檢查格式與是否對應明細，不重算金額：歷史報價要保留當時算出的數字。
+export function validateDevResult(result,dev){
+  const fail=message=>({field:'devResult',message:'已存開發費計算結果'+message});
+  if(!isObject(result))return [fail('格式不正確')];
+  if(!isObject(dev))return [fail('缺少對應的開發費明細')];
+  const errors=[];
+  for(const key of Object.keys(result))if(!devResultKeys.includes(key))errors.push(fail('包含不支援欄位：'+key));
+  for(const key of ['devCost','devPrice','grandTotal','roundingDiff','machiningUnitPrice'])if(!isMoney(result[key]))errors.push(fail('金額格式不正確：'+key));
+  const amortized=result.chargeMode==='amortized';
+  for(const key of ['perUnitDevCost','unitPriceWithDev'])if(amortized?!isMoney(result[key]):result[key]!==null)errors.push(fail('金額格式不正確：'+key));
+  if(result.chargeMode!==dev.chargeMode)errors.push(fail('收費方式與明細不一致'));
+  if(result.marginPercent!==dev.marginPercent)errors.push(fail('毛利率與明細不一致'));
+  if(!isNonNegativeNumber(result.quantity))errors.push(fail('訂單數量格式不正確'));
+  const items=Array.isArray(result.items)?result.items:null;
+  if(!items||!Array.isArray(dev.items)||items.length!==dev.items.length||items.some((r,i)=>!isObject(r)||Object.keys(r).length!==2||r.id!==dev.items[i]?.id||!isMoney(r.subtotal)))errors.push(fail('明細小計與開發費明細不一致'));
+  return errors;
+}
+
 export const devSummaryLabels={
   devCost:'內部開發成本',
   devPrice:'對客戶收取的開發費',
