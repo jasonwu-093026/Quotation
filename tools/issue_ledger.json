@@ -6,7 +6,8 @@
       "done": [
         "2026-10-07 implemented \u6253\u6a23\u8207\u958b\u767c\u8cbb\u7528 (dev cost) feature per issue #3's 6 acceptance scenarios: src/devcost.js + validation/quotes/storage/app.js/index.html/styles.css wiring; 27-case tests/devcost.test.js; fixed pre-existing mobile CSS grid overflow bug found during browser verification; opened PR #4",
         "2026-10-07 fixed tests/fixtures/mutations/i3.json schema (expected must be list[{nodeid,message}]; per-file changes use repaired/removed not replace/targets) \u2014 resolves the [6/6] mutation pre-handoff bounce from attempt 1",
-        "2026-10-07 round 4: posted the missing round-3 report + addressed spec-escalation false trigger; no code changes, head still a54b491"
+        "2026-10-07 round 4: posted the missing round-3 report + addressed spec-escalation false trigger; no code changes, head still a54b491",
+        "2026-10-07 round 5: implemented owner comment 6027724397 (items 2,3) on PR #4 head bb95cb5; verbatim quotes 9/9; A/B-on-main 3 items PASS; mutation PASS"
       ],
       "en_index": {
         "title": "Add sample-making and development costs",
@@ -20,7 +21,7 @@
         "source": "drawn at first spawn 2026-10-06T17:54:14Z (claude 50 / codex 50; roll 0.4202)",
         "fallback": "",
         "rounds": {
-          "claude": 4
+          "claude": 5
         },
         "date": "2026-10-06"
       },
@@ -34,13 +35,33 @@
           "added": "2026-10-07",
           "regression": "tests/devcost.test.js",
           "resolve_note": "\u65b0\u589e src/devcost.js\uff08\u9a57\u8b49\uff0b\u8a08\u7b97\uff09\u3001\u4e32\u63a5 validation/quotes/storage \u7684 dev \u6b04\u4f4d\u3001app.js UI\uff1b27 \u9805 node --test \u6848\u4f8b\u9396\u4f4f\u516d\u9805\u9a57\u6536\u60c5\u5883\uff0b\u908a\u754ccase\uff1b\u53e6\u4fee\u6b63\u65e2\u6709\u884c\u52d5\u7248 .quote-layout \u5728 max-width:960px \u7684 grid auto-min-sizing \u9020\u6210\u6c34\u5e73\u6ea2\u51fa\u7684\u6f5b\u4f0fbug\u3002"
+        },
+        {
+          "id": 2,
+          "item": "\u5206\u6524\u81f3\u672c\u6b21\u8a02\u55ae\u6642\uff0c\u7d50\u679c\u5340\u540c\u6642\u986f\u793a\u300c\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\u300d\u8207\u300c\u542b\u958b\u767c\u8cbb\u55ae\u50f9\u300d\uff08\u539f\u52a0\u5de5\u55ae\u50f9\uff0b\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\uff0c\u4f8b 182.50\uff0f282.50\uff09\u53ca\u5831\u50f9\u7e3d\u984d",
+          "author": "jasonwu-093026",
+          "resolved": true,
+          "verified": false,
+          "added": "2026-10-07",
+          "regression": "tests/devcost.test.js",
+          "resolve_note": "devSummaryRows() \u65bc\u5206\u6524\u6a21\u5f0f\u52a0\u5165\u300c\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\u300d\u8207\u300c\u542b\u958b\u767c\u8cbb\u55ae\u50f9\u300d\u5217\uff08\u4f8b 182.50\uff0f282.50\uff09\u53ca\u5831\u50f9\u7e3d\u984d\uff1bapp.js \u7531\u6b64\u6e32\u67d3\u7d50\u679c\u5340\uff08#dev-unit-with-dev\uff09\u3002\u6e2c\u8a66\uff1a\u7d50\u679c\u5340\u5217\u6a19\u7c64\uff0b\u91d1\u984d\u3001\u7368\u7acb\u6536\u53d6\u4e0d\u986f\u793a\u3001100/3 \u9032\u4f4d\u3001\u5be6\u969b\u52a0\u5de5\u55ae\u50f9 86.75\u2192269.25\uff1bbrowser-smoke \u65b7\u8a00\u684c\u9762\u8207 390px \u624b\u6a5f\u53ef\u898b\u3002"
+        },
+        {
+          "id": 3,
+          "item": "\u756b\u9762\u6a19\u7c64\u76f4\u63a5\u4f7f\u7528\u300c\u5167\u90e8\u958b\u767c\u6210\u672c\u300d\uff08\u958b\u767c\u7e3d\u6210\u672c\uff09\u8207\u300c\u5c0d\u5ba2\u6236\u6536\u53d6\u7684\u958b\u767c\u8cbb\u300d\uff08\u5efa\u8b70\u958b\u767c\u6536\u8cbb\uff09\uff0c\u4e26\u5728\u6e2c\u8a66\u4e2d\u9010\u5b57\u9a57\u8b49",
+          "author": "jasonwu-093026",
+          "resolved": true,
+          "verified": false,
+          "added": "2026-10-07",
+          "regression": "tests/devcost.test.js",
+          "resolve_note": "\u7d50\u679c\u5340\u6a19\u7c64\u6539\u70ba\u300c\u5167\u90e8\u958b\u767c\u6210\u672c\u300d\uff08\u958b\u767c\u7e3d\u6210\u672c\uff09\u8207\u300c\u5c0d\u5ba2\u6236\u6536\u53d6\u7684\u958b\u767c\u8cbb\u300d\uff08\u5efa\u8b70\u958b\u767c\u6536\u8cbb\uff09\uff0c\u8a08\u7b97\u4f9d\u64da\u5217\u5728\u6a19\u7c64\u4e0b\u65b9\uff1btests/devcost.test.js \u8207 browser-smoke.cjs \u9010\u5b57\u9a57\u8b49\uff0ccheck_verbatim_quotes 9/9 PASS\u3002"
         }
       ],
       "status": "verification-required",
       "handoff": {
         "state": "pending",
         "since": "2026-10-07",
-        "fails": 1
+        "fails": 0
       },
       "replies": [
         {
@@ -63,9 +84,16 @@
           "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6023032956",
           "note": "posted the round-3 report that had gone missing (process bounce only); addressed the spec-escalation trigger as a false positive (owner has never disputed the implementation); no code changed",
           "by": "juxta-triage-bot"
+        },
+        {
+          "date": "2026-10-07",
+          "kind": "commit",
+          "ref": "bb95cb5",
+          "note": "devSummaryRows result card + 11 new cases in tests/devcost.test.js",
+          "by": "juxta-triage-bot"
         }
       ],
-      "posted": "verification-required@a54b491",
+      "posted": "verification-required@bb95cb5",
       "bounces": [
         {
           "cat": "gate-fail",
