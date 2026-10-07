@@ -5,7 +5,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {calculateQuote} from '../src/calculator.js';
-import {validateDev,validateDevItem,calculateDevCost,calculateDevelopment,emptyDevItem,defaultDev} from '../src/devcost.js';
+import {validateDev,validateDevItem,calculateDevCost,calculateDevelopment,emptyDevItem,defaultDev,devSummaryRows,devSummaryLabels} from '../src/devcost.js';
+import {readFileSync} from 'node:fs';
 import {createQuote,updateQuote,saveQuote} from '../src/quotes.js';
 import {parseBackup,serializeBackup} from '../src/storage.js';
 import {settings100 as s,order100 as o} from './fixtures.js';
@@ -207,4 +208,93 @@ test('整合：defaultDev()提供空白起始狀態，等同未使用開發費',
   const dev=defaultDev();
   const machining=calculateQuote(s,o);
   assert.equal(calculateDevelopment(o,dev,machining).devCost,'0.00');
+});
+
+// ---- 負責人回饋（留言 6027724397）：結果區標籤與「含開發費單價」 ----
+// 「3. 明確呈現成本與對外收費」「4. 分攤至本次訂單」：結果區列出的標籤與金額即畫面所見內容。
+const labelsOf=rows=>rows.map(r=>r.label);
+const valuesOf=rows=>rows.map(r=>r.value);
+const sampleMachining={unitPrice:'100.00',batchPrice:'10000.00'};
+
+test('結果區：選擇「分攤至本次訂單」時同時顯示「每件分攤開發費」182.50 與「含開發費單價」282.50 及報價總額',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'},sampleMachining);
+  const rows=devSummaryRows(result);
+  assert.deepEqual(labelsOf(rows),['內部開發成本','對客戶收取的開發費','每件分攤開發費','含開發費單價','整筆報價總額（含開發費）']);
+  assert.deepEqual(valuesOf(rows),['14600.00','18250.00','182.50','282.50','28250.00']);
+});
+
+test('結果區：獨立收取時不顯示「每件分攤開發費」與「含開發費單價」，總額為加工總額＋對客戶收取的開發費',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:'20',chargeMode:'separate'},sampleMachining);
+  const rows=devSummaryRows(result);
+  assert.deepEqual(labelsOf(rows),['內部開發成本','對客戶收取的開發費','整筆報價總額（含開發費）']);
+  assert.deepEqual(valuesOf(rows),['14600.00','18250.00','28250.00']);
+});
+
+test('結果區標籤逐字：「內部開發成本」「對客戶收取的開發費」「每件分攤開發費」「含開發費單價」',()=>{
+  assert.equal(devSummaryLabels.devCost,'內部開發成本');
+  assert.equal(devSummaryLabels.devPrice,'對客戶收取的開發費');
+  assert.equal(devSummaryLabels.perUnitDevCost,'每件分攤開發費');
+  assert.equal(devSummaryLabels.unitPriceWithDev,'含開發費單價');
+});
+
+test('結果區：「內部開發成本」對應開發總成本、「對客戶收取的開發費」對應建議開發收費（毛利率 20% 時兩者不同，0% 時相同）',()=>{
+  const at=margin=>devSummaryRows(calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:margin,chargeMode:'separate'},sampleMachining));
+  const r20=at('20'),r0=at('0');
+  assert.equal(r20.find(r=>r.label==='內部開發成本').value,'14600.00');
+  assert.equal(r20.find(r=>r.label==='對客戶收取的開發費').value,'18250.00');
+  assert.equal(r0.find(r=>r.label==='內部開發成本').value,r0.find(r=>r.label==='對客戶收取的開發費').value);
+});
+
+test('結果區：尚無試算結果時仍顯示「內部開發成本」與「對客戶收取的開發費」標籤，金額留空',()=>{
+  const rows=devSummaryRows(null);
+  assert.deepEqual(labelsOf(rows),['內部開發成本','對客戶收取的開發費','整筆報價總額（含開發費）']);
+  assert.deepEqual(valuesOf(rows),[null,null,null]);
+});
+
+test('結果區：開發收費 100 元分攤 3 件，每件分攤開發費 33.34、含開發費單價 133.34、總額 400.02',()=>{
+  const result=calculateDevelopment({quantity:'3'},{items:[item({id:'x',method:'fixed',name:'固定開發費',amount:'100'})],marginPercent:'0',chargeMode:'amortized'},{unitPrice:'100.00',batchPrice:'300.00'});
+  const rows=devSummaryRows(result);
+  assert.equal(rows.find(r=>r.label==='每件分攤開發費').value,'33.34');
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'133.34');
+  assert.equal(rows.find(r=>r.label==='整筆報價總額（含開發費）').value,'400.02');
+});
+
+test('結果區：「含開發費單價」的計算依據列出原加工單價與每件分攤開發費',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'},sampleMachining);
+  const hint=devSummaryRows(result).find(r=>r.label==='含開發費單價').hint;
+  assert.ok(hint.includes('100.00')&&hint.includes('182.50'),hint);
+  const priceHint=devSummaryRows(result).find(r=>r.label==='對客戶收取的開發費').hint;
+  assert.ok(priceHint.includes('20%'),priceHint);
+});
+
+test('結果區：以實際加工試算（示範單價 86.75）分攤 18,250 至 100 件，含開發費單價 269.25、總額 26,925',()=>{
+  const machining=calculateQuote(s,o);
+  assert.equal(machining.unitPrice,'86.75');
+  const rows=devSummaryRows(calculateDevelopment(o,{items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'},machining));
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'269.25');
+  assert.equal(rows.find(r=>r.label==='整筆報價總額（含開發費）').value,'26925.00');
+});
+
+test('結果區：訂單 1 件分攤時，每件分攤開發費等於全部開發收費',()=>{
+  const result=calculateDevelopment({quantity:'1'},{items:acceptanceItems,marginPercent:'0',chargeMode:'amortized'},{unitPrice:'100.00',batchPrice:'100.00'});
+  const rows=devSummaryRows(result);
+  assert.equal(rows.find(r=>r.label==='每件分攤開發費').value,'14600.00');
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'14700.00');
+});
+
+test('結果區：分攤模式但開發費為 0 時，含開發費單價等於原加工單價',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:[],marginPercent:'0',chargeMode:'amortized'},sampleMachining);
+  const rows=devSummaryRows(result);
+  assert.equal(rows.find(r=>r.label==='每件分攤開發費').value,'0.00');
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'100.00');
+});
+
+test('畫面串接：結果區由 devSummaryRows 產生，「分攤至本次訂單」選項存在，舊的固定標籤列已移除',()=>{
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  assert.ok(html.includes('id="dev-summary"'));
+  assert.ok(html.includes('分攤至本次訂單'));
+  assert.ok(!html.includes('<span>開發總成本</span>'));
+  assert.ok(/devSummaryRows\(/.test(app));
+  assert.ok(app.includes("unitPriceWithDev:'dev-unit-with-dev'"));
 });

@@ -28,8 +28,13 @@ const {chromium}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES?process.
  assert.equal(await page.locator('#dev-price').textContent(),'9,000.00');
  assert.equal(await page.locator('#unit-price').textContent(),'86.75');
  assert.equal(await page.locator('#dev-grand-total').textContent(),'NT$ 17,675.00');
+ assert.equal(await page.locator('#dev-unit-with-dev').count(),0);
  await page.locator('input[name="dev-chargeMode"][value="amortized"]').check();
- assert.equal(await page.locator('#dev-perunit-row').isVisible(),true);
+ assert.equal(await page.locator('#dev-perunit').textContent(),'90.00');
+ assert.equal(await page.locator('#dev-unit-with-dev').textContent(),'176.75');
+ assert.equal(await page.locator('#dev-grand-total').textContent(),'NT$ 17,675.00');
+ const devCardText=await page.locator('#dev-result-card').innerText();
+ for(const label of ['內部開發成本','對客戶收取的開發費','每件分攤開發費','含開發費單價'])assert.ok(devCardText.includes(label),label);
  await dev2.locator('button.danger-button').click();
  assert.equal(await page.locator('.dev-item').count(),1);
  assert.equal(await page.locator('#dev-cost').textContent(),'3,200.00');
@@ -65,7 +70,7 @@ const {chromium}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES?process.
  page.once('dialog',d=>d.accept());await page.locator('#import-file').setInputFiles(backupPath);await page.locator('[data-delete]').waitFor();assert.equal(await page.locator('[data-delete]').count(),1);
  await page.reload();await page.locator('nav [data-view="records"]').click();await page.locator('[data-load]').click();assert.equal(await page.locator('#o-quantity').inputValue(),'200');assert.equal(await page.locator('#unit-price').textContent(),'86.75');
  await page.screenshot({path:process.env.QUOTATION_SCREENSHOT||'/tmp/quotation-desktop.png',fullPage:true});
- await page.setViewportSize({width:390,height:844});await page.locator('nav [data-view="records"]').click();assert.equal(await page.getByRole('button',{name:'匯出完整備份',exact:true}).last().isVisible(),true);await page.locator('nav [data-view="quote"]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/quotation-mobile.png',fullPage:true});
+ await page.setViewportSize({width:390,height:844});await page.locator('nav [data-view="records"]').click();assert.equal(await page.getByRole('button',{name:'匯出完整備份',exact:true}).last().isVisible(),true);await page.locator('nav [data-view="quote"]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('input[name="dev-chargeMode"][value="amortized"]').check();assert.equal(await page.locator('#dev-unit-with-dev').isVisible(),true);assert.equal(await page.locator('#dev-unit-with-dev').textContent(),'106.75');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/quotation-mobile.png',fullPage:true});
  assert.deepEqual(errors,[]);
  // Write failure must preserve draft export without showing a false success.
  const blocked=await context.newPage();await blocked.goto(url);await blocked.locator('#demo').click();await blocked.evaluate(()=>{Storage.prototype.setItem=function(){throw new Error('quota');};});await blocked.locator('#save-new').click();assert.match(await blocked.locator('#notice').textContent(),/尚未保存/);

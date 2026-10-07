@@ -100,6 +100,8 @@ export function calculateDevelopment(order,dev,machiningResult){
     unitPriceWithDev:null,
     grandTotal:null,
     roundingDiff:'0.00',
+    quantity:order.quantity,
+    machiningUnitPrice:machiningResult.unitPrice,
   };
   if(dev.chargeMode==='amortized'){
     const qty=D.from(order.quantity);
@@ -115,6 +117,29 @@ export function calculateDevelopment(order,dev,machiningResult){
     result.grandTotal=D.from(machiningResult.batchPrice).add(D.from(devPrice)).fixed(2);
   }
   return result;
+}
+
+export const devSummaryLabels={
+  devCost:'內部開發成本',
+  devPrice:'對客戶收取的開發費',
+  perUnitDevCost:'每件分攤開發費',
+  unitPriceWithDev:'含開發費單價',
+  grandTotal:'整筆報價總額（含開發費）',
+};
+
+// 結果區顯示的列（標籤＋金額＋計算依據）；result 為 null 時金額為 null，標籤仍顯示。
+export function devSummaryRows(result){
+  const L=devSummaryLabels;
+  const rows=[
+    {key:'devCost',label:L.devCost,value:result?.devCost??null,hint:'開發總成本＝所有開發費明細小計加總'},
+    {key:'devPrice',label:L.devPrice,value:result?.devPrice??null,hint:result?`建議開發收費＝內部開發成本 ÷（1－開發費目標毛利率 ${result.marginPercent}%）`:'建議開發收費＝內部開發成本 ÷（1－開發費目標毛利率）'},
+  ];
+  if(result?.chargeMode==='amortized'){
+    rows.push({key:'perUnitDevCost',label:L.perUnitDevCost,value:result.perUnitDevCost,hint:`對客戶收取的開發費 ÷ 本次訂單數量 ${result.quantity} 件，向上取至 0.01 元`});
+    rows.push({key:'unitPriceWithDev',label:L.unitPriceWithDev,value:result.unitPriceWithDev,hint:`原加工單價 ${result.machiningUnitPrice} ＋ 每件分攤開發費 ${result.perUnitDevCost}`});
+  }
+  rows.push({key:'grandTotal',label:L.grandTotal,value:result?.grandTotal??null,hint:result?.chargeMode==='amortized'?'含開發費單價 × 訂單數量，不再另外加收開發費':'原加工報價總額＋對客戶收取的開發費'});
+  return rows;
 }
 
 export function emptyDevItem(id){return {id,category:devCategories[0],method:'hours',name:'',hours:'',rate:'',quantity:'',unitPrice:'',amount:'',vendor:'',note:''};}

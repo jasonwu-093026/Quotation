@@ -2,7 +2,7 @@ import {settingKeys,orderKeys,labels,validateSettings,validateOrder,assertValid}
 import {calculateQuote} from './calculator.js';
 import {createStorage,serializeBackup,parseBackup,STORAGE_KEY} from './storage.js';
 import {createQuote,updateQuote,saveQuote,deleteQuote,applyCurrentSettings} from './quotes.js';
-import {devCategories,devCategoryLabels,devMethods,devMethodLabels,emptyDevItem,defaultDev,validateDev,calculateDevelopment} from './devcost.js';
+import {devCategories,devCategoryLabels,devMethods,devMethodLabels,emptyDevItem,defaultDev,validateDev,calculateDevelopment,devSummaryRows} from './devcost.js';
 const $=selector=>document.querySelector(selector);
 const copy=value=>structuredClone(value);
 const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
@@ -100,24 +100,28 @@ function applyDevIssues(issues){
  const otherIssues=issues.filter(i=>!i.field.startsWith('items.')&&i.field!=='marginPercent'&&i.field!=='chargeMode');
  const box=$('#dev-errors');box.replaceChildren();box.hidden=!otherIssues.length;for(const issue of otherIssues.slice(0,5)){const p=document.createElement('p');p.textContent=issue.message;box.append(p);}
 }
+const devSummaryIds={devCost:'dev-cost',devPrice:'dev-price',perUnitDevCost:'dev-perunit',unitPriceWithDev:'dev-unit-with-dev',grandTotal:'dev-grand-total'};
+function renderDevSummary(result){
+ const box=$('#dev-summary');box.replaceChildren();
+ devSummaryRows(result).forEach((row,i)=>{
+  const total=row.key==='grandTotal';
+  const line=document.createElement('div');line.className=total?'total-row':i===0||row.key==='unitPriceWithDev'?'cost-total':'cost-total smaller';line.dataset.devRow=row.key;
+  const label=document.createElement('span');label.textContent=row.label;
+  const value=document.createElement('strong');value.id=devSummaryIds[row.key];value.textContent=row.value==null?'—':(total?'NT$ ':'')+money(row.value);
+  line.append(label,value);box.append(line);
+  if(result){const hint=document.createElement('p');hint.className='dev-hint';hint.textContent=row.hint;box.append(hint);}
+ });
+}
 function renderDevResult(devResult){
  const breakdown=$('#dev-breakdown');breakdown.replaceChildren();
- $('#dev-perunit-row').hidden=true;$('#dev-rounding-note').hidden=true;
- if(!devState.items.length){
-  const p=document.createElement('p');p.className='muted';p.textContent='尚未新增開發費項目，視為未使用此功能。';breakdown.append(p);
-  $('#dev-cost').textContent='—';$('#dev-price').textContent='—';$('#dev-grand-total').textContent='—';
-  return;
- }
- if(!devResult){
-  const p=document.createElement('p');p.className='muted';p.textContent='請先完成試算及修正開發費欄位，才能計算開發費與整筆報價總額。';breakdown.append(p);
-  $('#dev-cost').textContent='—';$('#dev-price').textContent='—';$('#dev-grand-total').textContent='—';
+ $('#dev-rounding-note').hidden=true;
+ if(!devState.items.length||!devResult){
+  const p=document.createElement('p');p.className='muted';p.textContent=!devState.items.length?'尚未新增開發費項目，視為未使用此功能。':'請先完成試算及修正開發費欄位，才能計算開發費與整筆報價總額。';breakdown.append(p);
+  renderDevSummary(null);
   return;
  }
  for(const item of devResult.items){const source=devState.items.find(i=>i.id===item.id);if(!source)continue;const row=document.createElement('div');row.className='breakdown-row';const name=document.createElement('span');name.className='key';const dot=document.createElement('span');dot.className='legend-dot';name.append(dot,document.createTextNode(source.name||devCategoryLabels[source.category]));const amount=document.createElement('strong');amount.textContent=money(item.subtotal);row.append(name,amount);breakdown.append(row);}
- $('#dev-cost').textContent=money(devResult.devCost);
- $('#dev-price').textContent=money(devResult.devPrice);
- if(devResult.chargeMode==='amortized'){$('#dev-perunit-row').hidden=false;$('#dev-perunit').textContent=money(devResult.perUnitDevCost);}
- $('#dev-grand-total').textContent='NT$ '+money(devResult.grandTotal);
+ renderDevSummary(devResult);
  if(devResult.roundingDiff!=='0.00'){$('#dev-rounding-note').hidden=false;$('#dev-rounding-note').textContent=`因每件分攤金額向上取至 0.01 元，整筆報價較未取整數值多 NT$ ${money(devResult.roundingDiff)}，已計入報價總額。`;}
 }
 function calculate(show=true){
