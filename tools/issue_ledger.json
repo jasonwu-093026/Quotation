@@ -23,7 +23,7 @@
         "source": "drawn at first spawn 2026-10-06T17:54:14Z (claude 50 / codex 50; roll 0.4202)",
         "fallback": "",
         "rounds": {
-          "claude": 7
+          "claude": 9
         },
         "date": "2026-10-07"
       },
@@ -127,6 +127,13 @@
           "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6034785445",
           "note": "mobile dev-item selects fixed (38e9a88), checker 13/18 -> 18/18, item 5 awaiting verification",
           "by": "juxta-triage-bot"
+        },
+        {
+          "date": "2026-10-07",
+          "kind": "commented",
+          "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6034853290",
+          "note": "status report re-posted on unchanged head 18c1992 (checker 18/18, 93/0); item 5 awaits verification",
+          "by": "juxta-triage-bot"
         }
       ],
       "posted": "verification-required@18c1992",
@@ -140,6 +147,11 @@
           "cat": "gate-fail",
           "ts": "2026-10-06",
           "detail": "prior_round empty \u2014 this is round 2 of #3, so your prompt carried the PREVIOUS round's conclusion. State in ONE line what you did with it: 'prior conclusion stands: <gist>' (then continue from there, "
+        },
+        {
+          "cat": "gate-fail",
+          "ts": "2026-10-07",
+          "detail": "precedents[0].id 'exp-i3-1' is not an exact injected or active-hit id. Use precedents: [{\"id\": \"<exact id>\", \"applies\": false, \"reason\": \"<explanation>\"}]; false reasons need 12 characters and 6 disti"
         }
       ]
     }
