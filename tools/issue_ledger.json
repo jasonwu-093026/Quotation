@@ -9,21 +9,22 @@
         "2026-10-07 round 4: posted the missing round-3 report + addressed spec-escalation false trigger; no code changes, head still a54b491",
         "2026-10-07 round 5: implemented owner comment 6027724397 (items 2,3) on PR #4 head bb95cb5; verbatim quotes 9/9; A/B-on-main 3 items PASS; mutation PASS",
         "2026-10-07 round 6: implemented owner comment 6031222444 (item 4) on PR #4 head a398cc7; verbatim 12/12; A/B-on-main 4 items PASS; mutation PASS",
-        "2026-10-07 owner 6034461365: dev-cost item selects clipped at 390px; CSS wrap/full-row fix in 38e9a88, checker tools/check_dev_item_selects.py 13/18 -> 18/18, item 5 resolved (tests/styles.test.js)"
+        "2026-10-07 owner 6034461365: dev-cost item selects clipped at 390px; CSS wrap/full-row fix in 38e9a88, checker tools/check_dev_item_selects.py 13/18 -> 18/18, item 5 resolved (tests/styles.test.js)",
+        "2026-10-07 owner jasonwu-093026 verified (6039647047) and merged PR #4 as 2d81eb0; main tree == 18c1992; live Pages serves the dropdown fix; items 1-5 verified"
       ],
       "en_index": {
         "title": "Add sample-making and development costs",
         "summary": "Add a \"sample-making and development costs\" section to the existing machining quotation tool, so the owner can itemize costs for new products. Items include machining program writing, jig/fixture design and fabrication, materials and consumables, trial cutting and testing, internal inspection, and outsourced testing or third-party certification. Each item is priced by hours \u00d7 rate, quantity \u00d7 unit"
       },
       "first_triaged": "2026-10-06",
-      "last_updated": "2026-10-07",
+      "last_updated": "2026-10-08",
       "category": "script",
       "runtime": {
         "last": "claude",
         "source": "drawn at first spawn 2026-10-06T17:54:14Z (claude 50 / codex 50; roll 0.4202)",
         "fallback": "",
         "rounds": {
-          "claude": 9
+          "claude": 10
         },
         "date": "2026-10-07"
       },
@@ -33,57 +34,93 @@
           "item": "\u65b0\u589e\u6253\u6a23\u8207\u958b\u767c\u8cbb\u7528\u8a08\u7b97\u529f\u80fd\uff1a\u660e\u7d30\u3001\u4e09\u7a2e\u8a08\u50f9\u65b9\u5f0f\u3001\u6bdb\u5229\u7387\u3001\u7368\u7acb\u6536\u53d6\uff0f\u5206\u6524\u81f3\u672c\u6b21\u8a02\u55ae",
           "author": "jasonwu-093026",
           "resolved": true,
-          "verified": false,
+          "verified": true,
           "added": "2026-10-07",
           "regression": "tests/devcost.test.js",
-          "resolve_note": "\u65b0\u589e src/devcost.js\uff08\u9a57\u8b49\uff0b\u8a08\u7b97\uff09\u3001\u4e32\u63a5 validation/quotes/storage \u7684 dev \u6b04\u4f4d\u3001app.js UI\uff1b27 \u9805 node --test \u6848\u4f8b\u9396\u4f4f\u516d\u9805\u9a57\u6536\u60c5\u5883\uff0b\u908a\u754ccase\uff1b\u53e6\u4fee\u6b63\u65e2\u6709\u884c\u52d5\u7248 .quote-layout \u5728 max-width:960px \u7684 grid auto-min-sizing \u9020\u6210\u6c34\u5e73\u6ea2\u51fa\u7684\u6f5b\u4f0fbug\u3002"
+          "resolve_note": "\u65b0\u589e src/devcost.js\uff08\u9a57\u8b49\uff0b\u8a08\u7b97\uff09\u3001\u4e32\u63a5 validation/quotes/storage \u7684 dev \u6b04\u4f4d\u3001app.js UI\uff1b27 \u9805 node --test \u6848\u4f8b\u9396\u4f4f\u516d\u9805\u9a57\u6536\u60c5\u5883\uff0b\u908a\u754ccase\uff1b\u53e6\u4fee\u6b63\u65e2\u6709\u884c\u52d5\u7248 .quote-layout \u5728 max-width:960px \u7684 grid auto-min-sizing \u9020\u6210\u6c34\u5e73\u6ea2\u51fa\u7684\u6f5b\u4f0fbug\u3002",
+          "verified_by": "jasonwu-093026",
+          "verified_via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "verified_date": "2026-10-07"
         },
         {
           "id": 2,
           "item": "\u5206\u6524\u81f3\u672c\u6b21\u8a02\u55ae\u6642\uff0c\u7d50\u679c\u5340\u540c\u6642\u986f\u793a\u300c\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\u300d\u8207\u300c\u542b\u958b\u767c\u8cbb\u55ae\u50f9\u300d\uff08\u539f\u52a0\u5de5\u55ae\u50f9\uff0b\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\uff0c\u4f8b 182.50\uff0f282.50\uff09\u53ca\u5831\u50f9\u7e3d\u984d",
           "author": "jasonwu-093026",
           "resolved": true,
-          "verified": false,
+          "verified": true,
           "added": "2026-10-07",
           "regression": "tests/devcost.test.js",
-          "resolve_note": "devSummaryRows() \u65bc\u5206\u6524\u6a21\u5f0f\u52a0\u5165\u300c\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\u300d\u8207\u300c\u542b\u958b\u767c\u8cbb\u55ae\u50f9\u300d\u5217\uff08\u4f8b 182.50\uff0f282.50\uff09\u53ca\u5831\u50f9\u7e3d\u984d\uff1bapp.js \u7531\u6b64\u6e32\u67d3\u7d50\u679c\u5340\uff08#dev-unit-with-dev\uff09\u3002\u6e2c\u8a66\uff1a\u7d50\u679c\u5340\u5217\u6a19\u7c64\uff0b\u91d1\u984d\u3001\u7368\u7acb\u6536\u53d6\u4e0d\u986f\u793a\u3001100/3 \u9032\u4f4d\u3001\u5be6\u969b\u52a0\u5de5\u55ae\u50f9 86.75\u2192269.25\uff1bbrowser-smoke \u65b7\u8a00\u684c\u9762\u8207 390px \u624b\u6a5f\u53ef\u898b\u3002"
+          "resolve_note": "devSummaryRows() \u65bc\u5206\u6524\u6a21\u5f0f\u52a0\u5165\u300c\u6bcf\u4ef6\u5206\u6524\u958b\u767c\u8cbb\u300d\u8207\u300c\u542b\u958b\u767c\u8cbb\u55ae\u50f9\u300d\u5217\uff08\u4f8b 182.50\uff0f282.50\uff09\u53ca\u5831\u50f9\u7e3d\u984d\uff1bapp.js \u7531\u6b64\u6e32\u67d3\u7d50\u679c\u5340\uff08#dev-unit-with-dev\uff09\u3002\u6e2c\u8a66\uff1a\u7d50\u679c\u5340\u5217\u6a19\u7c64\uff0b\u91d1\u984d\u3001\u7368\u7acb\u6536\u53d6\u4e0d\u986f\u793a\u3001100/3 \u9032\u4f4d\u3001\u5be6\u969b\u52a0\u5de5\u55ae\u50f9 86.75\u2192269.25\uff1bbrowser-smoke \u65b7\u8a00\u684c\u9762\u8207 390px \u624b\u6a5f\u53ef\u898b\u3002",
+          "verified_by": "jasonwu-093026",
+          "verified_via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "verified_date": "2026-10-07"
         },
         {
           "id": 3,
           "item": "\u756b\u9762\u6a19\u7c64\u76f4\u63a5\u4f7f\u7528\u300c\u5167\u90e8\u958b\u767c\u6210\u672c\u300d\uff08\u958b\u767c\u7e3d\u6210\u672c\uff09\u8207\u300c\u5c0d\u5ba2\u6236\u6536\u53d6\u7684\u958b\u767c\u8cbb\u300d\uff08\u5efa\u8b70\u958b\u767c\u6536\u8cbb\uff09\uff0c\u4e26\u5728\u6e2c\u8a66\u4e2d\u9010\u5b57\u9a57\u8b49",
           "author": "jasonwu-093026",
           "resolved": true,
-          "verified": false,
+          "verified": true,
           "added": "2026-10-07",
           "regression": "tests/devcost.test.js",
-          "resolve_note": "\u7d50\u679c\u5340\u6a19\u7c64\u6539\u70ba\u300c\u5167\u90e8\u958b\u767c\u6210\u672c\u300d\uff08\u958b\u767c\u7e3d\u6210\u672c\uff09\u8207\u300c\u5c0d\u5ba2\u6236\u6536\u53d6\u7684\u958b\u767c\u8cbb\u300d\uff08\u5efa\u8b70\u958b\u767c\u6536\u8cbb\uff09\uff0c\u8a08\u7b97\u4f9d\u64da\u5217\u5728\u6a19\u7c64\u4e0b\u65b9\uff1btests/devcost.test.js \u8207 browser-smoke.cjs \u9010\u5b57\u9a57\u8b49\uff0ccheck_verbatim_quotes 9/9 PASS\u3002"
+          "resolve_note": "\u7d50\u679c\u5340\u6a19\u7c64\u6539\u70ba\u300c\u5167\u90e8\u958b\u767c\u6210\u672c\u300d\uff08\u958b\u767c\u7e3d\u6210\u672c\uff09\u8207\u300c\u5c0d\u5ba2\u6236\u6536\u53d6\u7684\u958b\u767c\u8cbb\u300d\uff08\u5efa\u8b70\u958b\u767c\u6536\u8cbb\uff09\uff0c\u8a08\u7b97\u4f9d\u64da\u5217\u5728\u6a19\u7c64\u4e0b\u65b9\uff1btests/devcost.test.js \u8207 browser-smoke.cjs \u9010\u5b57\u9a57\u8b49\uff0ccheck_verbatim_quotes 9/9 PASS\u3002",
+          "verified_by": "jasonwu-093026",
+          "verified_via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "verified_date": "2026-10-07"
         },
         {
           "id": 4,
           "item": "\u5132\u5b58\u8207\u532f\u51fa\u4fdd\u7559\u8a08\u7b97\u7d50\u679c\uff08\u5167\u90e8\u958b\u767c\u6210\u672c\u3001\u5c0d\u5ba2\u6236\u6536\u53d6\u7684\u958b\u767c\u8cbb\u3001\u6bcf\u4ef6\u5206\u6524\u3001\u542b\u958b\u767c\u8cbb\u55ae\u50f9\u3001\u5831\u50f9\u7e3d\u984d\u3001\u9032\u4f4d\u5dee\u984d\uff09\uff1b\u91cd\u65b0\u958b\u555f\uff0f\u532f\u5165\u986f\u793a\u5b58\u4e0b\u7684\u7d50\u679c\uff0c\u6539\u6210\u672c\u8a2d\u5b9a\u5f8c\u4e0d\u91cd\u7b97\uff1b\u820a\u5831\u50f9\uff0f\u820a\u5099\u4efd\u7167\u73fe\u6709\u65b9\u5f0f\u958b\u555f",
           "author": "jasonwu-093026",
           "resolved": true,
-          "verified": false,
+          "verified": true,
           "added": "2026-10-07",
           "regression": "tests/devcost.test.js",
-          "resolve_note": "quotes.js \u5132\u5b58\u6642\u8a08\u7b97\u4e26\u5b58\u5165 devResult\uff1bvalidateDevResult \u53ea\u9a57\u683c\u5f0f\u8207\u5c0d\u61c9\u660e\u7d30\u3001\u4e0d\u91cd\u7b97\uff1bquoteDevDisplay \u91cd\u65b0\u958b\u555f\u6642\u56de\u50b3\u5b58\u4e0b\u7684\u7d50\u679c\uff08\u820a\u5831\u50f9\u7121 devResult \u6642\u5373\u6642\u8a08\u7b97\uff09\uff1bapp.js \u672a\u4fee\u6539\u8349\u7a3f\u524d\u986f\u793a\u5b58\u4e0b\u7684\u7d50\u679c\u3002\u6e2c\u8a66\uff1aissue \u6848\u4f8b 14600/18250/182.50/282.50/28250/0.00\u3001\u5099\u4efd\u542b 14,600/18,250/282.50/28,250\u3001\u6539\u6210\u672c\u8a2d\u5b9a\u5f8c\u91cd\u958b\u6578\u5b57\u4e0d\u8b8a\u3001\u7ac4\u6539\u503c\u7167\u5b58\u4e0b\u986f\u793a\u3001\u820a\u5831\u50f9\u76f8\u5bb9\u3001\u532f\u5165\u683c\u5f0f\u932f\u8aa4\u62d2\u7d55\uff1bbrowser-smoke \u4ee5\u5be6\u969b UI \u9a57\u6536\u3002"
+          "resolve_note": "quotes.js \u5132\u5b58\u6642\u8a08\u7b97\u4e26\u5b58\u5165 devResult\uff1bvalidateDevResult \u53ea\u9a57\u683c\u5f0f\u8207\u5c0d\u61c9\u660e\u7d30\u3001\u4e0d\u91cd\u7b97\uff1bquoteDevDisplay \u91cd\u65b0\u958b\u555f\u6642\u56de\u50b3\u5b58\u4e0b\u7684\u7d50\u679c\uff08\u820a\u5831\u50f9\u7121 devResult \u6642\u5373\u6642\u8a08\u7b97\uff09\uff1bapp.js \u672a\u4fee\u6539\u8349\u7a3f\u524d\u986f\u793a\u5b58\u4e0b\u7684\u7d50\u679c\u3002\u6e2c\u8a66\uff1aissue \u6848\u4f8b 14600/18250/182.50/282.50/28250/0.00\u3001\u5099\u4efd\u542b 14,600/18,250/282.50/28,250\u3001\u6539\u6210\u672c\u8a2d\u5b9a\u5f8c\u91cd\u958b\u6578\u5b57\u4e0d\u8b8a\u3001\u7ac4\u6539\u503c\u7167\u5b58\u4e0b\u986f\u793a\u3001\u820a\u5831\u50f9\u76f8\u5bb9\u3001\u532f\u5165\u683c\u5f0f\u932f\u8aa4\u62d2\u7d55\uff1bbrowser-smoke \u4ee5\u5be6\u969b UI \u9a57\u6536\u3002",
+          "verified_by": "jasonwu-093026",
+          "verified_via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "verified_date": "2026-10-07"
         },
         {
           "id": 5,
           "item": "\u624b\u6a5f\u7a84\u87a2\u5e55\uff08390px\uff09\u958b\u767c\u8cbb\u9805\u76ee\u7684\u300c\u5206\u985e\u300d\u300c\u8a08\u7b97\u65b9\u5f0f\u300d\u4e0b\u62c9\u9078\u55ae\u6587\u5b57\u88ab\u622a\u65b7\uff08\u300c\u52a0\u5de5\u7a0b\u5f0f\u64b0\u2026\u300d\u300c\u5de5\u6642\u8a08\u50f9\uff08\u2026\u300d\uff09\uff1b\u9700\u5b8c\u6574\u986f\u793a\u9078\u9805\u6587\u5b57\uff0c\u624b\u6a5f\u4e0a\u5404\u5360\u4e00\u6574\u884c\u3001\u300c\u522a\u9664\u300d\u53ef\u9ede\uff0c\u96fb\u8166\u7248\u7248\u9762\u4e0d\u8b8a\uff0c\u7121\u6c34\u5e73\u6372\u8ef8",
           "author": "Devilbilly",
           "resolved": true,
-          "verified": false,
+          "verified": true,
           "added": "2026-10-07",
           "regression": "tests/styles.test.js",
-          "resolve_note": "styles.css\uff1a.dev-item-head \u53ef\u63db\u884c\u3001\u9078\u55ae min-width:max-content\uff08\u653e\u4e0d\u4e0b\u6642\u63db\u884c\u800c\u975e\u622a\u65b7\uff09\uff1b\u2264600px \u5169\u500b\u9078\u55ae flex-basis:100% \u5404\u5360\u4e00\u6574\u884c\u3001\u522a\u9664\u9760\u53f3\u53e6\u8d77\u4e00\u884c\u3002tools/check_dev_item_selects.py 390/1440px 18/18 PASS\uff08\u4fee\u6b63\u524d 13/18\uff09\uff1bbrowser-smoke \u65bc 390/1440 \u9a57\u8b49\u9078\u55ae\u5bec\u5ea6\u2265\u6587\u5b57\u6240\u9700\u5bec\u5ea6\u3001\u522a\u9664\u53ef\u9ede\u3001\u7121\u6c34\u5e73\u6372\u8ef8\uff1b1440 \u7dad\u6301\u540c\u4e00\u5217\u7b49\u5bec\uff08255/255px\uff0c\u8207\u4fee\u6b63\u524d\u76f8\u540c\uff09\u3002"
+          "resolve_note": "styles.css\uff1a.dev-item-head \u53ef\u63db\u884c\u3001\u9078\u55ae min-width:max-content\uff08\u653e\u4e0d\u4e0b\u6642\u63db\u884c\u800c\u975e\u622a\u65b7\uff09\uff1b\u2264600px \u5169\u500b\u9078\u55ae flex-basis:100% \u5404\u5360\u4e00\u6574\u884c\u3001\u522a\u9664\u9760\u53f3\u53e6\u8d77\u4e00\u884c\u3002tools/check_dev_item_selects.py 390/1440px 18/18 PASS\uff08\u4fee\u6b63\u524d 13/18\uff09\uff1bbrowser-smoke \u65bc 390/1440 \u9a57\u8b49\u9078\u55ae\u5bec\u5ea6\u2265\u6587\u5b57\u6240\u9700\u5bec\u5ea6\u3001\u522a\u9664\u53ef\u9ede\u3001\u7121\u6c34\u5e73\u6372\u8ef8\uff1b1440 \u7dad\u6301\u540c\u4e00\u5217\u7b49\u5bec\uff08255/255px\uff0c\u8207\u4fee\u6b63\u524d\u76f8\u540c\uff09\u3002",
+          "verified_by": "jasonwu-093026",
+          "verified_via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "verified_date": "2026-10-07"
         }
       ],
-      "status": "verification-required",
+      "status": "verified",
       "handoff": {
-        "state": "pending",
-        "since": "2026-10-07",
-        "fails": 0
+        "state": "pass",
+        "head": "18c1992759488bca25b8a2f170d27f334ba76812",
+        "run_id": "18dec34ea01d45df",
+        "at": "2026-10-07",
+        "fails": 0,
+        "errors": 0,
+        "duration_s": 7.8,
+        "passed": [
+          "[0a/6] merge with current base",
+          "[0b/6] toolbox registrations",
+          "[0c/6] knowledge references",
+          "[0d/6] target independence",
+          "[1d/6] reality evidence",
+          "[3/6] test suite",
+          "[5/6] conflict markers",
+          "[5a/6] assertions can fail",
+          "[5b/6] shared state",
+          "[5c/6] regression removal",
+          "[5d/6] main content",
+          "[6/6] A/B on main",
+          "[6/6] mutation control",
+          "[6/6] mutation parity"
+        ],
+        "failing": []
       },
       "replies": [
         {
@@ -134,9 +171,37 @@
           "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6034853290",
           "note": "status report re-posted on unchanged head 18c1992 (checker 18/18, 93/0); item 5 awaits verification",
           "by": "juxta-triage-bot"
+        },
+        {
+          "date": "2026-10-07",
+          "kind": "verify-signoff",
+          "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "note": "sign-off by jasonwu-093026",
+          "by": "jasonwu-093026"
+        },
+        {
+          "date": "2026-10-07",
+          "kind": "items-verified",
+          "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047",
+          "by": "jasonwu-093026",
+          "note": "owner 'jasonwu-093026' 'verified.' \u2192 items [1, 2, 3, 4, 5] verified in one sweep"
+        },
+        {
+          "date": "2026-10-07",
+          "kind": "verified",
+          "ref": "dual-approval",
+          "note": "verified \u2014 both roles signed (jasonwu-093026)",
+          "by": "juxta-triage-bot"
+        },
+        {
+          "date": "2026-10-08",
+          "kind": "commented",
+          "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6048916929",
+          "note": "owner verified (6039647047) and merged PR #4 as 2d81eb0; live site serves the fix; 5/5 items verified",
+          "by": "juxta-triage-bot"
         }
       ],
-      "posted": "verification-required@18c1992",
+      "posted": "verified@2d81eb0",
       "bounces": [
         {
           "cat": "gate-fail",
@@ -153,7 +218,14 @@
           "ts": "2026-10-07",
           "detail": "precedents[0].id 'exp-i3-1' is not an exact injected or active-hit id. Use precedents: [{\"id\": \"<exact id>\", \"applies\": false, \"reason\": \"<explanation>\"}]; false reasons need 12 characters and 6 disti"
         }
-      ]
+      ],
+      "filer": "jasonwu-093026",
+      "verify_signoffs": {
+        "jasonwu-093026": {
+          "date": "2026-10-07",
+          "via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047"
+        }
+      }
     }
   }
 }
