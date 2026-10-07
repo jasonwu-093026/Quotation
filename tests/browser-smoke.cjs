@@ -102,6 +102,20 @@ const {chromium}=require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES?process.
  await keep.evaluate(()=>{const d=JSON.parse(localStorage.getItem('quotation.v1'));delete d.quotes[0].devResult;localStorage.setItem('quotation.v1',JSON.stringify(d));});
  keep.once('dialog',d=>d.accept());await reopenKeep();assert.deepEqual(await keepShown(),accepted);
  await keep.setViewportSize({width:390,height:844});assert.equal(await keep.locator('#dev-unit-with-dev').isVisible(),true);assert.equal(await keep.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ // issue #3｜負責人留言 6034461365：開發費項目的「分類」「計算方式」選單在 390px 與 1440px 都完整顯示選取的文字；
+ // 手機上兩個選單各占一整行、「刪除」點得到；電腦版維持同一列；頁面沒有水平捲軸。
+ for(const width of [1440,390]){
+  const sp=await (await browser.newContext({viewport:{width,height:900}})).newPage();sp.on('pageerror',e=>errors.push(e.message));await sp.goto(url);
+  for(const [category,method] of [['program','hours'],['outsourceTest','fixed']]){await sp.locator('#dev-add').click();const it=sp.locator('.dev-item').last();await it.locator('select[aria-label="開發費分類"]').selectOption(category);await it.locator('select[aria-label="計算方式"]').selectOption(method);}
+  const heads=await sp.evaluate(()=>[...document.querySelectorAll('.dev-item-head')].map(h=>{const r=e=>e.getBoundingClientRect();const [cat,met]=h.querySelectorAll('select');const del=h.querySelector('.danger-button');
+   const need=s=>{const c=s.cloneNode(false);c.append(s.selectedOptions[0].cloneNode(true));c.style.cssText='width:auto;min-width:0;max-width:none;flex:none;position:absolute';h.append(c);const w=r(c).width;c.remove();return w;};
+   del.scrollIntoView({block:'center'});const d=r(del);
+   return {texts:[cat,met].map(s=>s.selectedOptions[0].textContent),fits:[cat,met].map(s=>r(s).width+0.5>=need(s)),widths:[cat,met].map(s=>Math.round(r(s).width)),head:Math.round(r(h).width),stacked:r(met).top>=r(cat).bottom,sameRow:Math.abs(r(cat).top-r(met).top)<2,delHit:document.elementFromPoint(d.left+d.width/2,d.top+d.height/2)===del};}));
+  assert.deepEqual(heads.map(h=>h.texts),[['加工程式撰寫與修改','工時計價（小時 × 費率）'],['委外測試、檢測及第三方機構驗證','固定金額']]);
+  for(const h of heads){assert.deepEqual(h.fits,[true,true],`${width}px ${h.texts} 選單文字被截斷 ${h.widths}`);assert.equal(h.delHit,true,`${width}px 刪除點不到`);
+   if(width===390)assert.ok(h.stacked&&h.widths.every(w=>w===h.head),`390px 選單應各占一整行 ${h.widths}/${h.head}`);else assert.ok(h.sameRow&&h.widths[0]===h.widths[1],`1440px 應維持同一列等寬 ${h.widths}`);}
+  assert.equal(await sp.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ }
  assert.deepEqual(errors,[]);
  await browser.close();console.log('PASS: browser calculations, CRUD, snapshots, backups, validation, text safety, mobile, storage failure and recovery');
 })().catch(e=>{console.error(e);process.exit(1);});

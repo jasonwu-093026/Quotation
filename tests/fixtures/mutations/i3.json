@@ -16,6 +16,22 @@
           "message": "邊界：選用工時計價時仍填入固定金額欄位，視為重複加總風險並拒絕"
         }
       ]
+    },
+    {
+      "regression": "tests/styles.test.js",
+      "changes": [
+        {
+          "path": "styles.css",
+          "repaired": ".dev-item-head select{flex-basis:100%;min-width:0}",
+          "removed": ""
+        }
+      ],
+      "expected": [
+        {
+          "nodeid": "tests/styles.test.js",
+          "message": "手機窄螢幕（≤600px）：「分類」「計算方式」選單各占一整行、上下排列，「刪除」靠右另起一行"
+        }
+      ]
     }
   ]
 }
