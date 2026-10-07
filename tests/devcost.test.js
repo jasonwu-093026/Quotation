@@ -1,0 +1,394 @@
+// issue #3｜增加打樣開發費用
+// 重現步驟：於「訂單試算」新增打樣與開發費用明細，分別以工時／數量／固定金額計價，
+// 選擇獨立收取或分攤至本次訂單，驗證金額計算、進位與資料持久化（儲存／備份）皆正確。
+// 本檔鎖住 issue #3 驗收條件（docs 規格六項情境）及額外邊界case，任何一項變更行為都會讓對應測試變紅。
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {calculateQuote} from '../src/calculator.js';
+import {validateDev,validateDevItem,calculateDevCost,calculateDevelopment,emptyDevItem,defaultDev,devSummaryRows,devSummaryLabels} from '../src/devcost.js';
+import {readFileSync} from 'node:fs';
+import {createQuote,updateQuote,saveQuote,applyCurrentSettings,quoteDevDisplay} from '../src/quotes.js';
+import {parseBackup,serializeBackup} from '../src/storage.js';
+import {settings100 as s,order100 as o} from './fixtures.js';
+
+function item(overrides){return {...emptyDevItem(overrides.id||'i1'),...overrides};}
+
+const acceptanceItems=[
+  item({id:'program',category:'program',method:'hours',name:'加工程式撰寫',hours:'4',rate:'800'}),
+  item({id:'fixtureDesign',category:'fixtureDesign',method:'hours',name:'夾治具設計',hours:'3',rate:'700'}),
+  item({id:'fixtureBuild',category:'fixtureBuild',method:'fixed',name:'夾治具委外製作',amount:'2500'}),
+  item({id:'material',category:'material',method:'quantity',name:'夾治具材料',quantity:'2',unitPrice:'600'}),
+  item({id:'trialTest',category:'trialTest',method:'hours',name:'測試人工',hours:'2',rate:'500'}),
+  item({id:'inspection',category:'inspection',method:'hours',name:'內部檢測',hours:'1',rate:'600'}),
+  item({id:'outsourceTest',category:'outsourceTest',method:'fixed',name:'委外驗證',amount:'4000',vendor:'第三方實驗室'}),
+];
+
+// 情境 1：明細計算正確（毛利率 0%）
+test('情境1：七筆明細加總為開發總成本與收費 14,600 元',()=>{
+  const dev={items:acceptanceItems,marginPercent:'0',chargeMode:'separate'};
+  const machining=calculateQuote(s,o);
+  const result=calculateDevelopment(o,dev,machining);
+  assert.equal(result.devCost,'14600.00');
+  assert.equal(result.devPrice,'14600.00');
+});
+
+// 情境 2：毛利率計算正確（20%）
+test('情境2：開發費目標毛利率20%時，開發收費為 18,250 元（14600÷0.8）',()=>{
+  const dev={items:acceptanceItems,marginPercent:'20',chargeMode:'separate'};
+  const machining=calculateQuote(s,o);
+  const result=calculateDevelopment(o,dev,machining);
+  assert.equal(result.devCost,'14600.00');
+  assert.equal(result.devPrice,'18250.00');
+});
+
+// 情境 3：獨立收取不改變加工單價
+test('情境3：獨立收取時加工單價與總額不變，報價總額為加工報價總額加開發收費',()=>{
+  const order={...o,quantity:'100',marginPercent:'0'};
+  const settings={...s};
+  const machining=calculateQuote(settings,{...order,materialUnit:'0',outsourceUnit:'0',toolingBatch:'0',machineMinutes:'0',laborMinutes:'0',setupMachineMinutes:'0',setupLaborMinutes:'0'});
+  // 建一個可控制單價為 100、數量 100 的簡化加工結果用以比對規格數字
+  const simpleMachining={unitPrice:'100.00',batchPrice:'10000.00'};
+  const dev={items:acceptanceItems,marginPercent:'20',chargeMode:'separate'};
+  const result=calculateDevelopment({...order,quantity:'100'},dev,simpleMachining);
+  assert.equal(result.devPrice,'18250.00');
+  assert.equal(simpleMachining.unitPrice,'100.00');
+  assert.equal(result.grandTotal,'28250.00');
+});
+
+// 情境 4：分攤時不重複加收
+test('情境4：分攤至本次訂單時，每件分攤182.50元、含開發費單價282.50元、總額28250元',()=>{
+  const simpleMachining={unitPrice:'100.00',batchPrice:'10000.00'};
+  const dev={items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'};
+  const result=calculateDevelopment({quantity:'100'},dev,simpleMachining);
+  assert.equal(result.perUnitDevCost,'182.50');
+  assert.equal(result.unitPriceWithDev,'282.50');
+  assert.equal(result.grandTotal,'28250.00');
+  assert.equal(result.roundingDiff,'0.00');
+});
+
+// 情境 5：刪除明細會更新合計
+test('情境5：刪除4000元的委外驗證項目後，開發總成本與收費更新為10600元',()=>{
+  const remaining=acceptanceItems.filter(i=>i.id!=='outsourceTest');
+  const dev={items:remaining,marginPercent:'0',chargeMode:'separate'};
+  const machining=calculateQuote(s,o);
+  const result=calculateDevelopment(o,dev,machining);
+  assert.equal(result.devCost,'10600.00');
+  assert.equal(result.devPrice,'10600.00');
+});
+
+// 情境 6：支援小數工時及正確進位，並可辨識分攤進位差額
+test('情境6a：1.5小時×800元/小時，小計為1200元',()=>{
+  const {totalCost}=calculateDevCost([item({id:'x',method:'hours',name:'小數工時',hours:'1.5',rate:'800'})]);
+  assert.equal(totalCost.fixed(),'1200.00');
+});
+test('情境6b：開發收費100元分攤3件，單價133.34元、總額400.02元、進位差額0.02元',()=>{
+  const simpleMachining={unitPrice:'100.00',batchPrice:'300.00'};
+  const dev={items:[item({id:'x',method:'fixed',name:'固定開發費',amount:'100'})],marginPercent:'0',chargeMode:'amortized'};
+  const result=calculateDevelopment({quantity:'3'},dev,simpleMachining);
+  assert.equal(result.devPrice,'100.00');
+  assert.equal(result.perUnitDevCost,'33.34');
+  assert.equal(result.unitPriceWithDev,'133.34');
+  assert.equal(result.grandTotal,'400.02');
+  assert.equal(result.roundingDiff,'0.02');
+});
+
+// ---- 額外邊界 case（≥10 項，涵蓋情境以外的輸入） ----
+
+test('邊界：空白明細清單視為開發成本0元，不阻擋試算',()=>{
+  const machining=calculateQuote(s,o);
+  const result=calculateDevelopment(o,{items:[],marginPercent:'0',chargeMode:'separate'},machining);
+  assert.equal(result.devCost,'0.00');
+  assert.equal(result.devPrice,'0.00');
+  assert.equal(result.grandTotal,machining.batchPrice);
+});
+
+test('邊界：dev為null時視為未使用此功能，createQuote可省略',()=>{
+  const q=createQuote(s,o,{id:'q-null-dev',now:'2026-10-07T00:00:00.000Z'});
+  assert.equal(q.dev,null);
+});
+
+test('邊界：未知分類被拒絕',()=>{
+  const issues=validateDevItem(item({category:'not-a-category'}));
+  assert.ok(issues.some(i=>i.field==='category'));
+});
+
+test('邊界：未知計算方式被拒絕',()=>{
+  const issues=validateDevItem(item({method:'percentage'}));
+  assert.ok(issues.some(i=>i.field==='method'));
+});
+
+test('邊界：項目名稱為空白被拒絕',()=>{
+  const issues=validateDevItem(item({name:'   '}));
+  assert.ok(issues.some(i=>i.field==='name'));
+});
+
+test('邊界：選用工時計價時仍填入固定金額欄位，視為重複加總風險並拒絕',()=>{
+  const issues=validateDevItem(item({method:'hours',hours:'1',rate:'100',amount:'50'}));
+  assert.ok(issues.some(i=>i.field==='amount'));
+});
+
+test('邊界：負數或格式錯誤的工時被拒絕',()=>{
+  for(const bad of ['-1','abc','1.23456789','','Infinity'])
+    assert.ok(validateDevItem(item({method:'hours',hours:bad,rate:'100'})).some(i=>i.field==='hours'),'應拒絕 '+JSON.stringify(bad));
+});
+
+test('邊界：開發費目標毛利率達100%被拒絕（除以零）',()=>{
+  const issues=validateDev({items:[],marginPercent:'100',chargeMode:'separate'});
+  assert.ok(issues.some(i=>i.field==='marginPercent'));
+});
+
+test('邊界：收費方式必須是separate或amortized',()=>{
+  const issues=validateDev({items:[],marginPercent:'0',chargeMode:'other'});
+  assert.ok(issues.some(i=>i.field==='chargeMode'));
+});
+
+test('邊界：明細識別碼重複被拒絕',()=>{
+  const dup=item({id:'dup',method:'fixed',amount:'1'});
+  const issues=validateDev({items:[dup,{...dup}],marginPercent:'0',chargeMode:'separate'});
+  assert.ok(issues.some(i=>i.field.endsWith('.id')));
+});
+
+test('邊界：委外機構名稱為選填，留空仍通過驗證',()=>{
+  const issues=validateDevItem(item({method:'fixed',amount:'1',vendor:'',name:'委外項目'}));
+  assert.equal(issues.length,0);
+});
+
+test('邊界：大量金額（接近安全整數）仍能正確計算且不溢位',()=>{
+  const {totalCost}=calculateDevCost([item({id:'big',method:'fixed',amount:'9000000000000'})]);
+  assert.equal(totalCost.fixed(),'9000000000000.00');
+});
+
+test('邊界：數量計價可用小數數量（例如公斤數的材料費）',()=>{
+  const {totalCost}=calculateDevCost([item({id:'kg',method:'quantity',quantity:'2.5',unitPrice:'40'})]);
+  assert.equal(totalCost.fixed(),'100.00');
+});
+
+test('邊界：不支援的開發費頂層欄位被拒絕',()=>{
+  const issues=validateDev({items:[],marginPercent:'0',chargeMode:'separate',extra:true});
+  assert.ok(issues.some(i=>i.field==='extra'));
+});
+
+test('邊界：更新報價時省略dev參數會保留原有開發費資料，不會被清空',()=>{
+  const dev={items:[item({id:'keep',method:'fixed',amount:'10',name:'保留項目'})],marginPercent:'0',chargeMode:'separate'};
+  const now='2026-10-07T00:00:00.000Z',later='2026-10-07T01:00:00.000Z';
+  const q=createQuote(s,o,{id:'q-keep',now},dev);
+  const next=updateQuote(q,s,{...o,quantity:'200'},later);
+  assert.deepEqual(next.dev,dev);
+});
+
+test('邊界：更新報價可明確清空開發費資料（傳入null）',()=>{
+  const dev={items:[item({id:'clear',method:'fixed',amount:'10',name:'待清除項目'})],marginPercent:'0',chargeMode:'separate'};
+  const now='2026-10-07T00:00:00.000Z',later='2026-10-07T01:00:00.000Z';
+  const q=createQuote(s,o,{id:'q-clear',now},dev);
+  const next=updateQuote(q,s,o,later,null);
+  assert.equal(next.dev,null);
+});
+
+test('整合：含開發費的報價可儲存、匯出、匯入後資料一致',()=>{
+  const dev={items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'};
+  const now='2026-10-07T00:00:00.000Z';
+  const q=createQuote(s,o,{id:'q-full',now},dev);
+  const store=saveQuote({schemaVersion:1,settings:s,quotes:[]},q);
+  const restored=parseBackup(serializeBackup(store));
+  assert.deepEqual(restored.quotes[0].dev,dev);
+});
+
+test('整合：含有重複加總風險欄位的報價無法儲存',()=>{
+  const badDev={items:[item({id:'bad',method:'hours',hours:'1',rate:'1',amount:'1'})],marginPercent:'0',chargeMode:'separate'};
+  assert.throws(()=>createQuote(s,o,{id:'q-bad',now:'2026-10-07T00:00:00.000Z'},badDev));
+});
+
+test('整合：舊版備份（沒有dev欄位）仍可開啟，視為未使用開發費功能',()=>{
+  const legacyQuote={id:'legacy',createdAt:'2026-10-07T00:00:00.000Z',updatedAt:'2026-10-07T00:00:00.000Z',calculationVersion:1,settingsSnapshot:s,order:o};
+  const restored=parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[legacyQuote]}));
+  assert.equal('dev' in restored.quotes[0],false);
+});
+
+test('整合：defaultDev()提供空白起始狀態，等同未使用開發費',()=>{
+  const dev=defaultDev();
+  const machining=calculateQuote(s,o);
+  assert.equal(calculateDevelopment(o,dev,machining).devCost,'0.00');
+});
+
+// ---- 負責人回饋（留言 6027724397）：結果區標籤與「含開發費單價」 ----
+// 「3. 明確呈現成本與對外收費」「4. 分攤至本次訂單」：結果區列出的標籤與金額即畫面所見內容。
+const labelsOf=rows=>rows.map(r=>r.label);
+const valuesOf=rows=>rows.map(r=>r.value);
+const sampleMachining={unitPrice:'100.00',batchPrice:'10000.00'};
+
+test('結果區：選擇「分攤至本次訂單」時同時顯示「每件分攤開發費」182.50 與「含開發費單價」282.50 及報價總額',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'},sampleMachining);
+  const rows=devSummaryRows(result);
+  assert.deepEqual(labelsOf(rows),['內部開發成本','對客戶收取的開發費','每件分攤開發費','含開發費單價','整筆報價總額（含開發費）']);
+  assert.deepEqual(valuesOf(rows),['14600.00','18250.00','182.50','282.50','28250.00']);
+});
+
+test('結果區：獨立收取時不顯示「每件分攤開發費」與「含開發費單價」，總額為加工總額＋對客戶收取的開發費',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:'20',chargeMode:'separate'},sampleMachining);
+  const rows=devSummaryRows(result);
+  assert.deepEqual(labelsOf(rows),['內部開發成本','對客戶收取的開發費','整筆報價總額（含開發費）']);
+  assert.deepEqual(valuesOf(rows),['14600.00','18250.00','28250.00']);
+});
+
+test('結果區標籤逐字：「內部開發成本」「對客戶收取的開發費」「每件分攤開發費」「含開發費單價」',()=>{
+  assert.equal(devSummaryLabels.devCost,'內部開發成本');
+  assert.equal(devSummaryLabels.devPrice,'對客戶收取的開發費');
+  assert.equal(devSummaryLabels.perUnitDevCost,'每件分攤開發費');
+  assert.equal(devSummaryLabels.unitPriceWithDev,'含開發費單價');
+});
+
+test('結果區：「內部開發成本」對應開發總成本、「對客戶收取的開發費」對應建議開發收費（毛利率 20% 時兩者不同，0% 時相同）',()=>{
+  const at=margin=>devSummaryRows(calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:margin,chargeMode:'separate'},sampleMachining));
+  const r20=at('20'),r0=at('0');
+  assert.equal(r20.find(r=>r.label==='內部開發成本').value,'14600.00');
+  assert.equal(r20.find(r=>r.label==='對客戶收取的開發費').value,'18250.00');
+  assert.equal(r0.find(r=>r.label==='內部開發成本').value,r0.find(r=>r.label==='對客戶收取的開發費').value);
+});
+
+test('結果區：尚無試算結果時仍顯示「內部開發成本」與「對客戶收取的開發費」標籤，金額留空',()=>{
+  const rows=devSummaryRows(null);
+  assert.deepEqual(labelsOf(rows),['內部開發成本','對客戶收取的開發費','整筆報價總額（含開發費）']);
+  assert.deepEqual(valuesOf(rows),[null,null,null]);
+});
+
+test('結果區：開發收費 100 元分攤 3 件，每件分攤開發費 33.34、含開發費單價 133.34、總額 400.02',()=>{
+  const result=calculateDevelopment({quantity:'3'},{items:[item({id:'x',method:'fixed',name:'固定開發費',amount:'100'})],marginPercent:'0',chargeMode:'amortized'},{unitPrice:'100.00',batchPrice:'300.00'});
+  const rows=devSummaryRows(result);
+  assert.equal(rows.find(r=>r.label==='每件分攤開發費').value,'33.34');
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'133.34');
+  assert.equal(rows.find(r=>r.label==='整筆報價總額（含開發費）').value,'400.02');
+});
+
+test('結果區：「含開發費單價」的計算依據列出原加工單價與每件分攤開發費',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'},sampleMachining);
+  const hint=devSummaryRows(result).find(r=>r.label==='含開發費單價').hint;
+  assert.ok(hint.includes('100.00')&&hint.includes('182.50'),hint);
+  const priceHint=devSummaryRows(result).find(r=>r.label==='對客戶收取的開發費').hint;
+  assert.ok(priceHint.includes('20%'),priceHint);
+});
+
+test('結果區：以實際加工試算（示範單價 86.75）分攤 18,250 至 100 件，含開發費單價 269.25、總額 26,925',()=>{
+  const machining=calculateQuote(s,o);
+  assert.equal(machining.unitPrice,'86.75');
+  const rows=devSummaryRows(calculateDevelopment(o,{items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'},machining));
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'269.25');
+  assert.equal(rows.find(r=>r.label==='整筆報價總額（含開發費）').value,'26925.00');
+});
+
+test('結果區：訂單 1 件分攤時，每件分攤開發費等於全部開發收費',()=>{
+  const result=calculateDevelopment({quantity:'1'},{items:acceptanceItems,marginPercent:'0',chargeMode:'amortized'},{unitPrice:'100.00',batchPrice:'100.00'});
+  const rows=devSummaryRows(result);
+  assert.equal(rows.find(r=>r.label==='每件分攤開發費').value,'14600.00');
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'14700.00');
+});
+
+test('結果區：分攤模式但開發費為 0 時，含開發費單價等於原加工單價',()=>{
+  const result=calculateDevelopment({quantity:'100'},{items:[],marginPercent:'0',chargeMode:'amortized'},sampleMachining);
+  const rows=devSummaryRows(result);
+  assert.equal(rows.find(r=>r.label==='每件分攤開發費').value,'0.00');
+  assert.equal(rows.find(r=>r.label==='含開發費單價').value,'100.00');
+});
+
+test('畫面串接：結果區由 devSummaryRows 產生，「分攤至本次訂單」選項存在，舊的固定標籤列已移除',()=>{
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  assert.ok(html.includes('id="dev-summary"'));
+  assert.ok(html.includes('分攤至本次訂單'));
+  assert.ok(!html.includes('<span>開發總成本</span>'));
+  assert.ok(/devSummaryRows\(/.test(app));
+  assert.ok(app.includes("unitPriceWithDev:'dev-unit-with-dev'"));
+});
+
+// ---- 負責人回饋（留言 6031222444）：「6. 儲存與備份」保留計算結果 ----
+// issue 內文（負責人留言原文）：「保留開發費明細、工時、費率、毛利率、收費方式**及計算結果**」，
+// 「重新開啟歷史報價時，保留當時資料，不因後續修改成本設定而自動重算」。
+const now='2026-10-07T00:00:00.000Z',later='2026-10-07T01:00:00.000Z';
+const order100Unit={...o,quantity:'100',machineMinutes:'16',laborMinutes:'0',setupMachineMinutes:'0',setupLaborMinutes:'0',materialUnit:'0',outsourceUnit:'0',toolingBatch:'0',marginPercent:'20'};
+const amortizedDev={items:acceptanceItems,marginPercent:'20',chargeMode:'amortized'};
+const savedQuote=()=>createQuote(s,order100Unit,{id:'q-saved',now},amortizedDev);
+const pick=r=>({devCost:r.devCost,devPrice:r.devPrice,perUnitDevCost:r.perUnitDevCost,unitPriceWithDev:r.unitPriceWithDev,grandTotal:r.grandTotal,roundingDiff:r.roundingDiff});
+
+test('儲存：20% 毛利、分攤 100 件，報價一併保存開發總成本、建議開發收費、每件分攤、含開發費單價、報價總額與進位差額',()=>{
+  assert.equal(calculateQuote(s,order100Unit).unitPrice,'100.00');
+  assert.deepEqual(pick(savedQuote().devResult),{devCost:'14600.00',devPrice:'18250.00',perUnitDevCost:'182.50',unitPriceWithDev:'282.50',grandTotal:'28250.00',roundingDiff:'0.00'});
+});
+
+test('匯出：完整備份檔裡有 14,600、18,250、282.50、28,250，匯入後計算結果一致',()=>{
+  const store=saveQuote({schemaVersion:1,settings:s,quotes:[]},savedQuote());
+  const text=serializeBackup(store);
+  for(const value of ['"devCost": "14600.00"','"devPrice": "18250.00"','"unitPriceWithDev": "282.50"','"grandTotal": "28250.00"'])assert.ok(text.includes(value),value);
+  assert.deepEqual(parseBackup(text).quotes[0].devResult,store.quotes[0].devResult);
+});
+
+test('改動成本設定再重新開啟：畫面顯示的仍是存下的 14,600、18,250、282.50、28,250',()=>{
+  const changed={...s,depreciation:'80000'};
+  assert.notEqual(calculateQuote(changed,order100Unit).unitPrice,'100.00');
+  const store=saveQuote({schemaVersion:1,settings:changed,quotes:[]},savedQuote());
+  const reopened=parseBackup(serializeBackup(store)).quotes[0];
+  const shown=quoteDevDisplay(reopened);
+  assert.deepEqual([shown.devCost,shown.devPrice,shown.unitPriceWithDev,shown.grandTotal],['14600.00','18250.00','282.50','28250.00']);
+});
+
+test('重新開啟：顯示存下的結果，不重新計算（即使與現行算式結果不同）',()=>{
+  const q=savedQuote();
+  q.devResult.grandTotal='28888.88';
+  const reopened=parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[q]})).quotes[0];
+  assert.equal(quoteDevDisplay(reopened).grandTotal,'28888.88');
+});
+
+test('舊報價：有開發費明細但沒有計算結果欄位時照現有方式開啟（即時計算）',()=>{
+  const {devResult,...legacy}=savedQuote();
+  const reopened=parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[legacy]})).quotes[0];
+  assert.equal('devResult' in reopened,false);
+  assert.equal(quoteDevDisplay(reopened).unitPriceWithDev,'282.50');
+});
+
+test('舊報價：沒有開發費資料時不產生也不顯示開發費結果',()=>{
+  const q=createQuote(s,o,{id:'q-no-dev',now});
+  assert.equal(q.devResult,null);
+  assert.equal(quoteDevDisplay(q),null);
+  const {dev,devResult,...legacy}=q;
+  assert.equal(quoteDevDisplay(parseBackup(serializeBackup({schemaVersion:1,settings:s,quotes:[legacy]})).quotes[0]),null);
+});
+
+test('儲存：獨立收取時存下的每件分攤與含開發費單價為空，報價總額 28,250',()=>{
+  const q=createQuote(s,order100Unit,{id:'q-sep',now},{...amortizedDev,chargeMode:'separate'});
+  assert.deepEqual(pick(q.devResult),{devCost:'14600.00',devPrice:'18250.00',perUnitDevCost:null,unitPriceWithDev:null,grandTotal:'28250.00',roundingDiff:'0.00'});
+});
+
+test('儲存：分攤進位差額 0.02 也一併保存',()=>{
+  const q=createQuote(s,{...order100Unit,quantity:'3'},{id:'q-round',now},{items:[item({id:'x',method:'fixed',name:'固定開發費',amount:'100'})],marginPercent:'0',chargeMode:'amortized'});
+  assert.deepEqual(pick(q.devResult),{devCost:'100.00',devPrice:'100.00',perUnitDevCost:'33.34',unitPriceWithDev:'133.34',grandTotal:'400.02',roundingDiff:'0.02'});
+});
+
+test('更新報價：修改輸入後重新儲存，依新輸入重算並保存（數量改 200 件）',()=>{
+  const next=updateQuote(savedQuote(),s,{...order100Unit,quantity:'200'},later);
+  assert.deepEqual(pick(next.devResult),{devCost:'14600.00',devPrice:'18250.00',perUnitDevCost:'91.25',unitPriceWithDev:'191.25',grandTotal:'38250.00',roundingDiff:'0.00'});
+  assert.equal(updateQuote(savedQuote(),s,order100Unit,later,null).devResult,null);
+});
+
+test('明確「套用最新成本」才重算並保存新結果',()=>{
+  const changed={...s,depreciation:'80000'};
+  const applied=applyCurrentSettings(savedQuote(),changed);
+  const unit=calculateQuote(changed,order100Unit).unitPrice;
+  assert.notEqual(applied.devResult.unitPriceWithDev,'282.50');
+  assert.equal(applied.devResult.unitPriceWithDev,(Number(unit)+182.5).toFixed(2));
+});
+
+test('匯入：已存計算結果格式錯誤或與明細不一致時拒絕',()=>{
+  const base=savedQuote();
+  const broken=[
+    ['不支援欄位',{...base,devResult:{...base.devResult,extra:'1'}}],
+    ['金額格式',{...base,devResult:{...base.devResult,grandTotal:'28250'}}],
+    ['收費方式不一致',{...base,devResult:{...base.devResult,chargeMode:'separate',perUnitDevCost:null,unitPriceWithDev:null}}],
+    ['缺少明細',{...base,dev:null}],
+    ['明細不一致',{...base,devResult:{...base.devResult,items:base.devResult.items.slice(1)}}],
+  ];
+  for(const [name,q] of broken)assert.throws(()=>parseBackup(JSON.stringify({schemaVersion:1,settings:s,quotes:[q]})),undefined,name);
+});
+
+test('畫面串接：重新開啟報價時採用存下的結果，修改草稿後才改為即時計算',()=>{
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  assert.ok(app.includes('savedDevResult=quoteDevDisplay(q)'));
+  assert.ok(app.includes('if(dirty)savedDevResult=null'));
+});

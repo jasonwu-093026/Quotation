@@ -1,9 +1,13 @@
 import {assertValid,validateStore} from './validation.js';
 import {calculateQuote} from './calculator.js';
+import {calculateDevelopment} from './devcost.js';
 export const STORAGE_KEY='quotation.v1';
 function checked(data){
   assertValid(validateStore(data));
-  for(const q of data.quotes)calculateQuote(q.settingsSnapshot,q.order);
+  for(const q of data.quotes){
+    const result=calculateQuote(q.settingsSnapshot,q.order);
+    if('dev' in q && q.dev!=null)calculateDevelopment(q.order,q.dev,result);
+  }
   return data;
 }
 export function serializeBackup(store){return JSON.stringify(checked(store),null,2);}

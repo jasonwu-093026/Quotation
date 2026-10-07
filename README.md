@@ -83,6 +83,8 @@ node tests/browser-smoke.cjs
 
 測試預設網址為 `http://127.0.0.1:8080`。可用 `QUOTATION_TEST_URL` 指定測試網址、`QUOTATION_CHROMIUM_PATH` 指定已安裝 Chromium。測試使用隔離瀏覽器環境與假資料。
 
+開發費項目的「分類」「計算方式」選單在各寬度下是否完整顯示，可執行 `python3 tools/check_dev_item_selects.py --widths 390,1440`（同樣需要 Playwright，可用 `PLAYWRIGHT_NODE_MODULES` 指定 playwright 所在的 node_modules），會逐一列出 PASS/FAIL。
+
 驗收結果見 [docs/acceptance.md](docs/acceptance.md)。
 
 ## 檔案說明
@@ -94,6 +96,7 @@ node tests/browser-smoke.cjs
 - `src/storage.js`：本機保存及匯入匯出。
 - `src/quotes.js`：報價紀錄與成本快照。
 - `tests/`：手算案例、資料保存、快照與瀏覽器操作驗證。
+- `tools/check_dev_item_selects.py`：量測開發費項目選單是否截斷文字的檢查工具。
 - `docs/superpowers/`：已確認的設計規格及實作計畫。
 
 後續多人填報、共用資料庫與權限另行規劃，第一版不包含這些功能。

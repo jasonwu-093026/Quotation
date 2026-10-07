@@ -1,0 +1,17 @@
+{
+ "id": "exp-i3-4",
+ "domain": "style",
+ "situation": "A row of <select> dropdowns sits in a flex row (flex:1;min-width:0) next to a fixed button, and at narrow widths the selected option text is clipped (e.g. '\u52a0\u5de5\u7a0b\u5f0f\u64b0\u2026') \u2014 the owner reports it at one phone width and asks that desktop stay unchanged",
+ "right_direction": "Measure first: for each select, clone it with only the selected option, width:auto, append to the same parent and compare widths (needed vs box) across a SWEEP of widths, not only the two the owner named \u2014 here 768\u20131280px had the same defect. Fix with flex-wrap:wrap on the row plus min-width:max-content on the selects while keeping flex:1 (basis 0): when they fit they stay equal-width (desktop byte-identical geometry), when they do not they wrap instead of shrinking. At the phone breakpoint force flex-basis:100% and reset min-width:0, because min-width beats max-width and max-content would overflow a container narrower than the longest option. Lock it with a CSS-rule test that npm test runs (the A/B gate only runs the target test command) plus a real-browser assertion and a check_*.py PASS/FAIL table.",
+ "anti_pattern": "Adding only a max-width:600px media query for the one width the owner reported, or reaching for text-overflow:ellipsis (it does not apply to the closed select box) \u2014 both leave tablet/small-laptop widths truncating and give no measurement to sign off.",
+ "anti_signals": [],
+ "strength": 1,
+ "sources": [
+  "#3"
+ ],
+ "teacher": "agent",
+ "lock": "tests/styles.test.js",
+ "tool": "tools/check_dev_item_selects.py",
+ "source_quote": "\u8acb\u8b93\u9019\u5169\u500b\u9078\u55ae\u5728\u7a84\u87a2\u5e55\u4e0a\u986f\u793a\u5b8c\u6574\u7684\u9078\u9805\u6587\u5b57\u3002\u4f8b\u5982\u624b\u6a5f\u4e0a\u6539\u6210\u5404\u5360\u4e00\u6574\u884c\u3001\u4e0a\u4e0b\u6392\u5217\uff0c\u300c\u522a\u9664\u300d\u6309\u9215\u7dad\u6301\u53ef\u4ee5\u9ede\u5230\u3002\u96fb\u8166\u7248\u7684\u7248\u9762\u4e0d\u8b8a\u3002",
+ "source_url": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6034461365"
+}

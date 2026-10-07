@@ -1,3 +1,4 @@
+import {validateDev,validateDevResult} from './devcost.js';
 export const settingKeys=['machineCount','machineDays','machineHours','machineUtilization','depreciation','maintenance','rent','electricity','consumables','workerCount','workerDays','workerHours','workerUtilization','laborMonthly'];
 export const orderKeys=['name','partNumber','date','quantity','machineMinutes','laborMinutes','setupMachineMinutes','setupLaborMinutes','materialUnit','outsourceUnit','toolingBatch','marginPercent','notes'];
 const integers=new Set(['machineCount','machineDays','workerCount','workerDays','quantity']);
@@ -33,7 +34,7 @@ function fields(data,keys){
 export const validateSettings=s=>fields(s,settingKeys);
 export const validateOrder=o=>fields(o,orderKeys);
 export function assertValid(issues){if(issues.length){const e=new Error(issues[0].message);e.issues=issues;throw e;}}
-const quoteKeys=['id','createdAt','updatedAt','calculationVersion','settingsSnapshot','order'];
+const quoteKeys=['id','createdAt','updatedAt','calculationVersion','settingsSnapshot','order','dev','devResult'];
 export function validateStore(data){
   const errors=[];
   if(!isObject(data))return [{field:'backup',message:'備份必須是資料物件'}];
@@ -51,6 +52,8 @@ export function validateStore(data){
     if(q.updatedAt<q.createdAt)errors.push({field:'backup',message:'報價修改時間早於建立時間'});
     if(Object.keys(q).some(k=>!quoteKeys.includes(k)))errors.push({field:'backup',message:'報價包含不支援欄位'});
     errors.push(...validateSettings(q.settingsSnapshot),...validateOrder(q.order));
+    if('dev' in q && q.dev!=null)errors.push(...validateDev(q.dev));
+    if('devResult' in q && q.devResult!=null)errors.push(...validateDevResult(q.devResult,q.dev));
   }
   return errors;
 }
