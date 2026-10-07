@@ -8,7 +8,8 @@
         "2026-10-07 fixed tests/fixtures/mutations/i3.json schema (expected must be list[{nodeid,message}]; per-file changes use repaired/removed not replace/targets) \u2014 resolves the [6/6] mutation pre-handoff bounce from attempt 1",
         "2026-10-07 round 4: posted the missing round-3 report + addressed spec-escalation false trigger; no code changes, head still a54b491",
         "2026-10-07 round 5: implemented owner comment 6027724397 (items 2,3) on PR #4 head bb95cb5; verbatim quotes 9/9; A/B-on-main 3 items PASS; mutation PASS",
-        "2026-10-07 round 6: implemented owner comment 6031222444 (item 4) on PR #4 head a398cc7; verbatim 12/12; A/B-on-main 4 items PASS; mutation PASS"
+        "2026-10-07 round 6: implemented owner comment 6031222444 (item 4) on PR #4 head a398cc7; verbatim 12/12; A/B-on-main 4 items PASS; mutation PASS",
+        "2026-10-07 owner 6034461365: dev-cost item selects clipped at 390px; CSS wrap/full-row fix in 38e9a88, checker tools/check_dev_item_selects.py 13/18 -> 18/18, item 5 resolved (tests/styles.test.js)"
       ],
       "en_index": {
         "title": "Add sample-making and development costs",
@@ -22,7 +23,7 @@
         "source": "drawn at first spawn 2026-10-06T17:54:14Z (claude 50 / codex 50; roll 0.4202)",
         "fallback": "",
         "rounds": {
-          "claude": 6
+          "claude": 7
         },
         "date": "2026-10-07"
       },
@@ -66,6 +67,16 @@
           "added": "2026-10-07",
           "regression": "tests/devcost.test.js",
           "resolve_note": "quotes.js \u5132\u5b58\u6642\u8a08\u7b97\u4e26\u5b58\u5165 devResult\uff1bvalidateDevResult \u53ea\u9a57\u683c\u5f0f\u8207\u5c0d\u61c9\u660e\u7d30\u3001\u4e0d\u91cd\u7b97\uff1bquoteDevDisplay \u91cd\u65b0\u958b\u555f\u6642\u56de\u50b3\u5b58\u4e0b\u7684\u7d50\u679c\uff08\u820a\u5831\u50f9\u7121 devResult \u6642\u5373\u6642\u8a08\u7b97\uff09\uff1bapp.js \u672a\u4fee\u6539\u8349\u7a3f\u524d\u986f\u793a\u5b58\u4e0b\u7684\u7d50\u679c\u3002\u6e2c\u8a66\uff1aissue \u6848\u4f8b 14600/18250/182.50/282.50/28250/0.00\u3001\u5099\u4efd\u542b 14,600/18,250/282.50/28,250\u3001\u6539\u6210\u672c\u8a2d\u5b9a\u5f8c\u91cd\u958b\u6578\u5b57\u4e0d\u8b8a\u3001\u7ac4\u6539\u503c\u7167\u5b58\u4e0b\u986f\u793a\u3001\u820a\u5831\u50f9\u76f8\u5bb9\u3001\u532f\u5165\u683c\u5f0f\u932f\u8aa4\u62d2\u7d55\uff1bbrowser-smoke \u4ee5\u5be6\u969b UI \u9a57\u6536\u3002"
+        },
+        {
+          "id": 5,
+          "item": "\u624b\u6a5f\u7a84\u87a2\u5e55\uff08390px\uff09\u958b\u767c\u8cbb\u9805\u76ee\u7684\u300c\u5206\u985e\u300d\u300c\u8a08\u7b97\u65b9\u5f0f\u300d\u4e0b\u62c9\u9078\u55ae\u6587\u5b57\u88ab\u622a\u65b7\uff08\u300c\u52a0\u5de5\u7a0b\u5f0f\u64b0\u2026\u300d\u300c\u5de5\u6642\u8a08\u50f9\uff08\u2026\u300d\uff09\uff1b\u9700\u5b8c\u6574\u986f\u793a\u9078\u9805\u6587\u5b57\uff0c\u624b\u6a5f\u4e0a\u5404\u5360\u4e00\u6574\u884c\u3001\u300c\u522a\u9664\u300d\u53ef\u9ede\uff0c\u96fb\u8166\u7248\u7248\u9762\u4e0d\u8b8a\uff0c\u7121\u6c34\u5e73\u6372\u8ef8",
+          "author": "Devilbilly",
+          "resolved": true,
+          "verified": false,
+          "added": "2026-10-07",
+          "regression": "tests/styles.test.js",
+          "resolve_note": "styles.css\uff1a.dev-item-head \u53ef\u63db\u884c\u3001\u9078\u55ae min-width:max-content\uff08\u653e\u4e0d\u4e0b\u6642\u63db\u884c\u800c\u975e\u622a\u65b7\uff09\uff1b\u2264600px \u5169\u500b\u9078\u55ae flex-basis:100% \u5404\u5360\u4e00\u6574\u884c\u3001\u522a\u9664\u9760\u53f3\u53e6\u8d77\u4e00\u884c\u3002tools/check_dev_item_selects.py 390/1440px 18/18 PASS\uff08\u4fee\u6b63\u524d 13/18\uff09\uff1bbrowser-smoke \u65bc 390/1440 \u9a57\u8b49\u9078\u55ae\u5bec\u5ea6\u2265\u6587\u5b57\u6240\u9700\u5bec\u5ea6\u3001\u522a\u9664\u53ef\u9ede\u3001\u7121\u6c34\u5e73\u6372\u8ef8\uff1b1440 \u7dad\u6301\u540c\u4e00\u5217\u7b49\u5bec\uff08255/255px\uff0c\u8207\u4fee\u6b63\u524d\u76f8\u540c\uff09\u3002"
         }
       ],
       "status": "verification-required",
@@ -109,9 +120,16 @@
           "ref": "a398cc7",
           "note": "devResult persistence + quoteDevDisplay + 12 new cases in tests/devcost.test.js + browser acceptance flow",
           "by": "juxta-triage-bot"
+        },
+        {
+          "date": "2026-10-07",
+          "kind": "commented",
+          "ref": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6034785445",
+          "note": "mobile dev-item selects fixed (38e9a88), checker 13/18 -> 18/18, item 5 awaiting verification",
+          "by": "juxta-triage-bot"
         }
       ],
-      "posted": "verification-required@a398cc7",
+      "posted": "verification-required@18c1992",
       "bounces": [
         {
           "cat": "gate-fail",
