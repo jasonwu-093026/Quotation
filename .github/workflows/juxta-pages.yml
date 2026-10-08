@@ -1,0 +1,46 @@
+name: Juxta static Pages previews
+on:
+  push:
+    branches: ["main"]
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+  pages: write
+  id-token: write
+concurrency:
+  group: juxta-pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event.repository.private == false && (github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "main"
+          persist-credentials: false
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: false
+      - name: Assemble exact public commits
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          JUXTA_PAGES_CONFIG: '{"slug": "jasonwu-093026/Quotation", "base": "main", "root": "."}'
+          JUXTA_PAGES_OUTPUT: ${{ runner.temp }}/juxta-pages
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          cfg = json.loads(os.environ['JUXTA_PAGES_CONFIG'])
+          subprocess.run([sys.executable, '.github/juxta-pages/assemble.py', '--slug', cfg['slug'], '--base', cfg['base'], '--root', cfg['root'], '--output', os.environ['JUXTA_PAGES_OUTPUT']], check=True)
+          PY
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/juxta-pages
+      - uses: actions/deploy-pages@v4
+        id: deployment
