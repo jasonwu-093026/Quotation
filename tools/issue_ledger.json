@@ -263,7 +263,17 @@
         },
         "date": "2026-10-11"
       },
-      "status": "in-progress"
+      "status": "in-progress",
+      "items": [
+        {
+          "id": 1,
+          "item": "Beta \u8207\u7e3d\u8cc7\u7522\u8a08\u7b97",
+          "author": "jasonwu-093026",
+          "resolved": false,
+          "verified": false,
+          "added": "2026-10-11"
+        }
+      ]
     }
   }
 }
