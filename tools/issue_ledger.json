@@ -253,7 +253,16 @@
         },
         "status": "absent"
       },
-      "category": "generic"
+      "category": "generic",
+      "runtime": {
+        "last": "codex",
+        "source": "/nfs/home/billy/git/Quotation/juxta-home/quotation/worker_runtime.json default",
+        "fallback": "",
+        "rounds": {
+          "codex": 1
+        },
+        "date": "2026-10-11"
+      }
     }
   }
 }
