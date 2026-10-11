@@ -359,9 +359,11 @@
           "id": 10,
           "item": "\u624b\u6a5f\u6b04\u4f4d\u3001\u6309\u9215\u53ca\u4e3b\u8981\u6d41\u7a0b",
           "author": "jasonwu-093026",
-          "resolved": false,
+          "resolved": true,
           "verified": false,
-          "added": "2026-10-11"
+          "added": "2026-10-11",
+          "regression": "tests/investment.test.js",
+          "resolve_note": "\u5df2\u5be6\u4f5c\u4e26\u4ee5\u865b\u69cb\u8cc7\u6599\u9a57\u8b49\uff1b\u6b63\u5f0f\u90e8\u7f72\u8207\u5be6\u9ad4 Safari \u5f85\u64c1\u6709\u8005\u78ba\u8a8d\u3002"
         }
       ]
     }
