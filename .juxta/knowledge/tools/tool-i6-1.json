@@ -1,0 +1,14 @@
+{
+ "id": "tool-i6-1",
+ "name": "tools/check_investment.py",
+ "repo": "target",
+ "purpose": "隔離瀏覽器驗證私人投資工具的頁面計算、存取及手機操作",
+ "use_when": "修改投資持股、再平衡、本機保存或私人登入入口",
+ "domain": "generic",
+ "invoke": "python3 tools/check_investment.py",
+ "sources": [
+  "#6"
+ ],
+ "strength": 1,
+ "added_by": "agent"
+}

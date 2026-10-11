@@ -100,3 +100,9 @@ node tests/browser-smoke.cjs
 - `docs/superpowers/`：已確認的設計規格及實作計畫。
 
 後續多人填報、共用資料庫與權限另行規劃，第一版不包含這些功能。
+
+## 私人投資曝險工具
+
+另提供獨立的擁有者登入入口，支援持股、台幣／美元現金、Beta、再平衡、復原及備份。
+請依 [私人投資工具說明](docs/investment.md) 啟動 `node investment/server.js`。
+私人入口需要自己的 HTTPS 伺服器，不能以 GitHub Pages 取代登入保護。

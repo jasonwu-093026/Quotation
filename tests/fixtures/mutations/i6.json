@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "repairs": [
+    {
+      "regression": "tests/investment.test.js",
+      "changes": [
+        {
+          "path": "investment/core.js",
+          "repaired": "const delta=Math.max(-h.shares,Math.min(maxBuy,requested));",
+          "removed": "const delta=requested;"
+        }
+      ],
+      "expected": [
+        {
+          "nodeid": "tests/investment.test.js",
+          "message": "買入限制使用同幣別現金，不借用台幣買美元"
+        }
+      ]
+    }
+  ]
+}

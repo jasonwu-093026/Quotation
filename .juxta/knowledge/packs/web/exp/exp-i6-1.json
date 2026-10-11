@@ -1,0 +1,15 @@
+{
+ "id": "exp-i6-1",
+ "domain": "script",
+ "situation": "既有靜態網站加入僅允許擁有者存取的私人頁面，原部署仍為公開 Pages，資料保存在瀏覽器",
+ "right_direction": "在獨立伺服器驗證擁有者並保護每個工具資產；以同一已驗證 origin 提供 session API，明確區分公開預覽與私人部署",
+ "anti_pattern": "以 localStorage 的登入旗標或只隱藏表單當成私人存取控制，將公開 Pages 誤報為已部署的私人入口",
+ "anti_signals": [],
+ "strength": 1,
+ "sources": [
+  "#6"
+ ],
+ "teacher": "agent",
+ "lock": "tests/investment.test.js",
+ "tool": ""
+}
