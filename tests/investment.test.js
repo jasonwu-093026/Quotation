@@ -4,6 +4,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {once} from 'node:events';
+import {randomBytes} from 'node:crypto';
+const ephemeralPassword=()=>randomBytes(32).toString('hex');
 const coreURL=new URL('../investment/core.js',import.meta.url);
 let core;
 test('私人投資工具的計算與保存模組必須存在',async()=>{core=await import(coreURL);assert.equal(typeof core.summary,'function');});
@@ -26,23 +28,23 @@ test('HTML 代號以資料保留、巨大輸入拒絕、重複名稱可有不同
 test('持股反向排列不改總資產，全部现金 Beta 為零',()=>{const s=sample();s.holdings.push({...s.holdings[0],id:'other',beta:-1});assert.equal(core.summary(s).beta,core.summary({...s,holdings:[...s.holdings].reverse()}).beta);s.holdings=[];assert.equal(core.summary(s).beta,0);});
 test('HTTP：未登入、非擁有者、CSRF、登出後不能讀取工具',async()=>{
  const {createPrivateServer,passwordHash}=await import('../investment/server.js');
- let clock=Date.now();const server=createPrivateServer({owner:'test-owner',hash:passwordHash('fictional-test-only'),origin:'http://127.0.0.1:9006',now:()=>clock});
+ const password=ephemeralPassword();let clock=Date.now();const server=createPrivateServer({owner:'test-owner',hash:passwordHash(password),origin:'http://127.0.0.1:9006',now:()=>clock});
  server.listen(0,'127.0.0.1');await once(server,'listening');const url=`http://127.0.0.1:${server.address().port}`;
  const post=(body,cookie='',origin='http://127.0.0.1:9006')=>fetch(url+'/api/login',{method:'POST',headers:{'Content-Type':'application/json',Origin:origin,Cookie:cookie},body:JSON.stringify(body),redirect:'manual'});
  try{
   assert.equal((await fetch(url+'/app.html')).status,401,'未登入不可讀取工具');
   assert.equal((await fetch(url+'/core.js')).status,401);
-  assert.equal((await post({username:'other',password:'fictional-test-only'})).status,401);
+  assert.equal((await post({username:'other',password})).status,401);
   assert.equal((await post({username:'test-owner',password:'wrong'})).status,401);
-  assert.equal((await post({username:'test-owner',password:'fictional-test-only'},'','https://attacker.invalid')).status,403);
-  const login=await post({username:'test-owner',password:'fictional-test-only'});assert.equal(login.status,200);const cookie=login.headers.get('set-cookie').split(';')[0];assert.match(login.headers.get('set-cookie'),/HttpOnly/);
+  assert.equal((await post({username:'test-owner',password},'','https://attacker.invalid')).status,403);
+  const login=await post({username:'test-owner',password});assert.equal(login.status,200);const cookie=login.headers.get('set-cookie').split(';')[0];assert.match(login.headers.get('set-cookie'),/HttpOnly/);
   const page=await fetch(url+'/app.html',{headers:{Cookie:cookie}});assert.equal(page.status,200);assert.match(await page.text(),/投資曝險/);assert.equal(page.headers.get('cache-control'),'no-store');
   assert.equal((await fetch(url+'/server.js',{headers:{Cookie:cookie}})).status,404);
   assert.equal((await fetch(url+'/api/logout',{method:'POST',headers:{Cookie:cookie,Origin:'http://127.0.0.1:9006'}})).status,200);
   assert.equal((await fetch(url+'/app.html',{headers:{Cookie:cookie}})).status,401);
-  const again=await post({username:'test-owner',password:'fictional-test-only'});const expired=again.headers.get('set-cookie').split(';')[0];clock+=8*3600000+1;assert.equal((await fetch(url+'/api/session',{headers:{Cookie:expired}})).status,401);
-  for(let i=0;i<10;i++)assert.equal((await post({username:'other',password:null})).status,401);assert.equal((await post({username:'test-owner',password:'fictional-test-only'})).status,429,'登入嘗試受限');
+  const again=await post({username:'test-owner',password});const expired=again.headers.get('set-cookie').split(';')[0];clock+=8*3600000+1;assert.equal((await fetch(url+'/api/session',{headers:{Cookie:expired}})).status,401);
+  for(let i=0;i<10;i++)assert.equal((await post({username:'other',password:null})).status,401);assert.equal((await post({username:'test-owner',password})).status,429,'登入嘗試受限');
  }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });
-test('私人伺服器缺少雜湊或不安全遠端 origin 不能啟動',async()=>{const {createPrivateServer,passwordHash}=await import('../investment/server.js');assert.throws(()=>createPrivateServer({owner:'test',hash:'plaintext',origin:'http://127.0.0.1'}),/雜湊/);assert.throws(()=>createPrivateServer({owner:'test',hash:passwordHash('fictional-test-only'),origin:'http://private.invalid'}),/HTTPS/);});
+test('私人伺服器缺少雜湊或不安全遠端 origin 不能啟動',async()=>{const {createPrivateServer,passwordHash}=await import('../investment/server.js');assert.throws(()=>createPrivateServer({owner:'test',hash:'plaintext',origin:'http://127.0.0.1'}),/雜湊/);assert.throws(()=>createPrivateServer({owner:'test',hash:passwordHash(ephemeralPassword()),origin:'http://private.invalid'}),/HTTPS/);});
 test('超大備份拒絕，匯出與重新載入使用同一格式',()=>{assert.throws(()=>core.parseBackup(' '.repeat(2*1024*1024+1)),/2 MB/);assert.deepEqual(core.parseBackup(core.serializeBackup(sample())),sample());});

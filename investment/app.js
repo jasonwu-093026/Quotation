@@ -20,6 +20,7 @@ function render(){
   const opt=document.createElement('option');opt.value=h.id;opt.textContent=h.symbol+' · '+h.currency;selector.append(opt);
  }
  if(state.holdings.some(h=>h.id===selected))selector.value=selected;
+ showSelected();
  $('#simulation').replaceChildren();$('#apply').disabled=true;$('#undo').disabled=!state.undo;
  $('#history-list').replaceChildren();for(const h of [...state.history].sort((a,b)=>b.date.localeCompare(a.date))){const r=summary(h.portfolio);row($('#history-list'),h.date,`總資產 NT$ ${money(r.total)} · Beta ${fmt(r.beta)}`);}
 }
@@ -27,6 +28,8 @@ function cancelEdit(){editing=null;$('#holding-form').reset();$('#save-holding')
 $('#settings-form').addEventListener('submit',event=>{event.preventDefault();attempt(()=>{const form=event.currentTarget;const next=clone(state);for(const k of ['target','tolerance','fx'])next.settings[k]=num(form.elements[k].value);for(const k of ['TWD','USD'])next.cash[k]=num(form.elements[k].value);next.undo=null;persist(validate(next));});});
 $('#holding-form').addEventListener('submit',event=>{event.preventDefault();attempt(()=>{const f=event.currentTarget;const holding={id:editing||(crypto.randomUUID?.()||Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join(''))};for(const k of ['symbol','currency','category'])holding[k]=f.elements[k].value.trim();for(const k of ['shares','price','beta'])holding[k]=num(f.elements[k].value);const next=clone(state);if(editing)next.holdings[next.holdings.findIndex(h=>h.id===editing)]=holding;else next.holdings.push(holding);next.undo=null;persist(validate(next));cancelEdit();});});
 $('#cancel-edit').addEventListener('click',cancelEdit);
+function showSelected(){const h=state.holdings.find(h=>h.id===$('#rebalance-holding').value);$('#selected-holding').textContent=h?`${h.symbol} · ${h.currency}`:'尚無持股';}
+$('#rebalance-holding').addEventListener('change',showSelected);
 $('#rebalance-form').addEventListener('submit',event=>{event.preventDefault();simulation=null;$('#apply').disabled=true;$('#simulation').replaceChildren();attempt(()=>{const f=event.currentTarget;const id=f.elements.holding.value;const target=num(f.elements.target.value);const r=rebalance(state,id,target);simulation={id,target};const div=row($('#simulation'),r.delta<0?`賣出 ${fmt(-r.delta)} 股`:`買入 ${fmt(r.delta)} 股`,`${r.delta<0?'收入':'支出'} ${r.currency} ${money(r.amount)} · 剩餘現金 ${r.currency} ${money(r.remaining)} · 調整後 Beta ${fmt(r.beta)}`);div.classList.add('simulation-result');const status=document.createElement('p');status.textContent=r.limited?'受現金或持股數量限制，無法完全達標。':r.attained?'已達試算目標。':'整股取整後無法完全達標。';div.append(status);$('#apply').disabled=r.delta===0;});});
 $('#rebalance-form').addEventListener('input',()=>{simulation=null;$('#apply').disabled=true;$('#simulation').replaceChildren();});
 $('#apply').addEventListener('click',()=>attempt(()=>{if(simulation&&confirm('確認更新工具內持股與現金？不會執行真實交易。'))persist(applyRebalance(state,simulation.id,simulation.target));}));

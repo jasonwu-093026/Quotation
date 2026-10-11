@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import {once} from 'node:events';
 import {createRequire} from 'node:module';
 import {performance} from 'node:perf_hooks';
+import {randomBytes} from 'node:crypto';
+const password=randomBytes(32).toString('hex');
 import {createPrivateServer,passwordHash} from '../investment/server.js';
 const require=createRequire(import.meta.url);const {chromium,webkit}=require('playwright');
 const rows=[];const check=async(name,fn)=>{const start=performance.now();try{const result=await fn();rows.push({name,status:'PASS',result:result||'符合',ms:Math.round(performance.now()-start)});}catch(e){rows.push({name,status:'FAIL',result:e.message,ms:Math.round(performance.now()-start)});throw e;}};
 const sample={version:1,settings:{target:1,tolerance:10,fx:32},holdings:[{id:'demo',symbol:'虛構標的',currency:'TWD',category:'股票',shares:5000,price:100,beta:2}],cash:{TWD:500000,USD:0},history:[],undo:null};
-const port=Number(process.env.PORT||9006);const url=`http://127.0.0.1:${port}`;const server=createPrivateServer({owner:'fictional-owner',hash:passwordHash('fictional-test-only'),origin:url});server.listen(port,'127.0.0.1');await once(server,'listening');
+const port=Number(process.env.PORT||9006);const url=`http://127.0.0.1:${port}`;const server=createPrivateServer({owner:'fictional-owner',hash:passwordHash(password),origin:url});server.listen(port,'127.0.0.1');await once(server,'listening');
 let browser;const started=performance.now();
 try{
  const cases=process.argv.includes('--chromium-only')?[[chromium,1440],[chromium,390]]:[[chromium,1440],[chromium,390],[webkit,390]];
@@ -15,7 +17,7 @@ try{
   try{browser=await engine.launch({headless:true});}catch(e){rows.push({name:engine.name()+' 啟動前置條件',status:'FAIL',result:e.message,ms:0});throw e;}const context=await browser.newContext({viewport:{width,height:900},acceptDownloads:true});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const tag=`${engine.name()} ${width}px`;
   await check(tag+' 未登入不可讀取工具',async()=>{assert.equal((await context.request.get(url+'/app.html')).status(),401);});
-  await page.goto(url);await page.locator('[name=username]').fill('fictional-owner');await page.locator('[name=password]').fill('fictional-test-only');await page.getByRole('button',{name:'登入',exact:true}).click();await page.locator('#workspace').waitFor();
+  await page.goto(url);await page.locator('[name=username]').fill('fictional-owner');await page.locator('[name=password]').fill(password);await page.getByRole('button',{name:'登入',exact:true}).click();await page.locator('#workspace').waitFor();
   await check(tag+' 零資產與表單新增',async()=>{
    assert.equal(await page.locator('#beta').textContent(),'尚無資料');
    await page.locator('#settings-form [name=TWD]').fill('500000');await page.getByRole('button',{name:'儲存設定與現金'}).click();
@@ -41,7 +43,7 @@ try{
   });
   await check(tag+' 美元、受限數量與 HTML 代號',async()=>{
    const usd=structuredClone(sample);usd.holdings[0]={...usd.holdings[0],currency:'USD',shares:10,price:100,symbol:'<img src=x onerror=alert(1)>'};usd.cash={TWD:0,USD:100};
-   page.once('dialog',d=>d.accept());await page.locator('#import').setInputFiles({name:'usd.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(usd))});await page.waitForFunction(()=>document.querySelector('#total').textContent==='35,200.00');assert.equal(await page.locator('#holding-list img').count(),0);
+   page.once('dialog',d=>d.accept());await page.locator('#import').setInputFiles({name:'usd.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(usd))});await page.waitForFunction(()=>document.querySelector('#total').textContent==='35,200.00');assert.equal(await page.locator('#holding-list img').count(),0);assert.equal(await page.locator('#selected-holding').textContent(),usd.holdings[0].symbol+' · USD');
    await page.locator('#rebalance-form [name=target]').fill('3');await page.getByRole('button',{name:'試算',exact:true}).click();assert.match(await page.locator('#simulation').textContent(),/受現金或持股數量限制/);return 'USD 資產 NT$ 35,200；受限買入；代號以文字顯示';
   });
   await check(tag+' 欄位與按鈕可操作、無水平溢出',async()=>{
