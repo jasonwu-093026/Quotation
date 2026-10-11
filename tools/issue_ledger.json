@@ -375,6 +375,13 @@
           "ref": "e554d32b57186bd95312c902d587f1c368843dd9",
           "note": "\u79c1\u4eba\u6295\u8cc7\u5de5\u5177\u3001\u6838\u5fc3\u8207\u6d4f\u89c8\u5668\u9a57\u6536\u53ca mutation",
           "by": "juxta-triage-bot"
+        },
+        {
+          "date": "2026-10-11",
+          "kind": "commented",
+          "ref": "https://github.com/jasonwu-093026/Quotation/pull/7#issuecomment-6111858646",
+          "note": "\u5b8c\u6574\u9a57\u6536\u5831\u544a\uff1b\u539f\u8b70\u984c HTTP 410\uff0c\u7b49\u5f85\u66ff\u4ee3\u8ffd\u8e64\u8b70\u984c",
+          "by": "juxta-triage-bot"
         }
       ],
       "posted": "blocked@e554d32b57186bd95312c902d587f1c368843dd9"
