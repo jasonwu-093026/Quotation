@@ -233,6 +233,15 @@
           "via": "https://github.com/jasonwu-093026/Quotation/issues/3#issuecomment-6039647047"
         }
       }
+    },
+    "6": {
+      "done": [],
+      "en_index": {
+        "title": "Investment exposure management tool",
+        "summary": "Build a private, owner-only investment exposure management website for mobile (iPhone Safari) and desktop (Windows Chrome), modeled on a reference site, with holdings and TWD/USD cash management, Beta calculation, allocation ratios, rebalancing simulation, history snapshots, and backup export/import, using manually entered prices and exchange rates in the first version. Data is stored in the curre"
+      },
+      "first_triaged": "2026-10-11",
+      "last_updated": "2026-10-11"
     }
   }
 }
