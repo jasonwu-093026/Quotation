@@ -241,7 +241,18 @@
         "summary": "Build a private, owner-only investment exposure management website for mobile (iPhone Safari) and desktop (Windows Chrome), modeled on a reference site, with holdings and TWD/USD cash management, Beta calculation, allocation ratios, rebalancing simulation, history snapshots, and backup export/import, using manually entered prices and exchange rates in the first version. Data is stored in the curre"
       },
       "first_triaged": "2026-10-11",
-      "last_updated": "2026-10-11"
+      "last_updated": "2026-10-11",
+      "acceptance_probe": {
+        "version": 1,
+        "frozen_at": "2026-10-11T17:26:01.085961+00:00",
+        "source": {
+          "url": "https://github.com/jasonwu-093026/Quotation/issues/6",
+          "revision": "2026-10-11T17:24:38Z",
+          "body_hash": "ca0c63fa3c9ba8a3608b8940ff503f21fa2e3a45cedf1dfe1bddf06c3fb1db68",
+          "by": "jasonwu-093026"
+        },
+        "status": "absent"
+      }
     }
   }
 }
