@@ -1,4 +1,16 @@
 {
   "schema": 1,
-  "asks": []
+  "asks": [
+    {
+      "id": "ask-i6-1",
+      "domain": "generic",
+      "question": "Issue #6 was deleted during implementation (GitHub HTTP 410). Which replacement tracking issue should own PR #7 so the gated verification workflow can proceed?",
+      "answer": "",
+      "sources": [
+        "#6"
+      ],
+      "asked_date": "2026-10-11",
+      "answered_date": ""
+    }
+  ]
 }
